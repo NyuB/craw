@@ -116,7 +116,36 @@ def make_temp_dir(prefix: str) -> str:
     return temp_dir
 
 
-def main(test_file: str) -> None:
+class Options:
+    interactive: bool = False
+    yes: bool = False
+
+    def promote(self) -> bool:
+        return self.interactive and self.yes
+
+    def parse(self, args: list[str]) -> list[str]:
+        """
+        Returns: the given arguments with options filtered out
+        """
+        ret: list[str] = []
+        for i, arg in enumerate(args):
+            if arg == "--interactive" or arg == "-i":
+                self.interactive = True
+            elif arg == "--yes" or arg == "-y":
+                self.yes = True
+            elif arg == "--promote":
+                self.yes = True
+                self.interactive = True
+            elif arg == "--":
+                ret.extend(args[i + 1 :])
+                break
+            else:
+                ret.append(arg)
+
+        return ret
+
+
+def main(options: Options, test_file: str) -> None:
     temp_dir = make_temp_dir(".")
     env: dict[str, str] = {k: v for k, v in os.environ.items()}
     cram_special_variables: dict[str, str] = {"TESTDIR": str(os.path.abspath("."))}
@@ -127,10 +156,14 @@ def main(test_file: str) -> None:
         lines = fin.read().replace("\r\n", "\n").split("\n")
         output = test(lines, shell)
 
-        output_file = f"{test_file.removesuffix(".t")}.err"
-        with open(output_file, "w", newline="\n") as fout:
-            fout.write("\n".join(output))
+    output_file = (
+        test_file if options.promote() else f"{test_file.removesuffix(".t")}.err"
+    )
+    with open(output_file, "w", newline="\n") as fout:
+        fout.write("\n".join(output))
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    options = Options()
+    args = options.parse(sys.argv[1:])
+    main(options, args[0])

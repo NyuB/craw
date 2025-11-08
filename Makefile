@@ -6,3 +6,8 @@ test:
 	$(PY) craw.py test.t
 	$(RMRF) .cram
 	git --no-pager diff -p --no-index -- test.t test.err
+
+test-promote:
+	$(PY) craw.py -i -y test.t
+	$(RMRF) .cram
+

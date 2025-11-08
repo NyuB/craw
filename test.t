@@ -4,3 +4,5 @@ Just a comment
   $ echo Content > test.txt
   $ cat test.txt
   Content
+  $ cat $TESTDIR/test_resource.txt
+  Lorem ipsum

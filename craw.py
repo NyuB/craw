@@ -6,24 +6,22 @@ from random import randint
 
 
 class Powershell:
-    def __init__(self, workdir: str):
-        # Source - https://stackoverflow.com/a/54066021
-        # Posted by Ondrej K., modified by community. See post 'Timeline' for change history
-        # Retrieved 2025-11-08, License - CC BY-SA 4.0
-
-        (child_read, parent_write) = os.pipe()
-        (parent_read, child_write) = os.pipe()
-        self.child = subprocess.Popen(
-            ["powershell", "/NoLogo"],
-            stdin=child_read,
-            stdout=child_write,
-            stderr=child_write,
-            cwd=workdir,
-        )
-        self.outfile = os.fdopen(parent_write, "w", buffering=1)
-        self.infile = os.fdopen(parent_read)
+    def __init__(self, workdir: str, env: dict[str, str], variables: dict[str, str]):
+        """
+        Parameters:
+            env(dict[str,str]): environment variables
+            variables(dict[str,str]): variables set as prelude to the powershell. Will be accessible as `$var`, compared to `$env:var` for env variables
+        """
+        self.init_ipc_(workdir, env)
 
         # discard shell prelude
+        self.mark_()
+        self.receive_until_mark_()
+
+        # Set variables
+        for k, v in variables.items():
+            self.send_line_(f'${k}="{v}"')
+
         self.mark_()
         self.receive_until_mark_()
 
@@ -69,6 +67,24 @@ class Powershell:
     def receive_skip_(self) -> None:
         _ = self.receive_line_()
 
+    def init_ipc_(self, workdir: str, env: dict[str, str]):
+        # Source - https://stackoverflow.com/a/54066021
+        # Posted by Ondrej K., modified by community. See post 'Timeline' for change history
+        # Retrieved 2025-11-08, License - CC BY-SA 4.0
+
+        (child_read, parent_write) = os.pipe()
+        (parent_read, child_write) = os.pipe()
+        self.child = subprocess.Popen(
+            ["powershell", "/NoLogo"],
+            stdin=child_read,
+            stdout=child_write,
+            stderr=child_write,
+            cwd=workdir,
+            env=env,
+        )
+        self.outfile = os.fdopen(parent_write, "w", buffering=1)
+        self.infile = os.fdopen(parent_read)
+
 
 def test(test_lines: list[str], exec: Callable[[str], list[str]]) -> list[str]:
     """
@@ -102,10 +118,15 @@ def make_temp_dir(prefix: str) -> str:
 
 def main(test_file: str) -> None:
     temp_dir = make_temp_dir(".")
+    env: dict[str, str] = {k: v for k, v in os.environ.items()}
+    cram_special_variables: dict[str, str] = {"TESTDIR": str(os.path.abspath("."))}
+    env.update(cram_special_variables)
+    shell = Powershell(workdir=temp_dir, env=env, variables=cram_special_variables)
+
     with open(test_file, "r") as fin:
         lines = fin.read().replace("\r\n", "\n").split("\n")
-        shell = Powershell(workdir=temp_dir)
         output = test(lines, shell)
+
         output_file = f"{test_file.removesuffix(".t")}.err"
         with open(output_file, "w", newline="\n") as fout:
             fout.write("\n".join(output))

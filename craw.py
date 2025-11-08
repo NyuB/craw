@@ -55,6 +55,7 @@ class Powershell:
 
         return result
 
+    # TODO watermak mangling to disambiguate sub-outputs
     def watermark_(self):
         return "<CRAM>"
 

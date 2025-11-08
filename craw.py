@@ -1,0 +1,98 @@
+import os
+import subprocess
+import sys
+from typing import Callable
+
+
+class Powershell:
+    def __init__(self):
+        # Source - https://stackoverflow.com/a/54066021
+        # Posted by Ondrej K., modified by community. See post 'Timeline' for change history
+        # Retrieved 2025-11-08, License - CC BY-SA 4.0
+
+        (child_read, parent_write) = os.pipe()
+        (parent_read, child_write) = os.pipe()
+        self.child = subprocess.Popen(
+            ["powershell", "/NoLogo"], stdin=child_read, stdout=child_write
+        )
+        self.outfile = os.fdopen(parent_write, "w", buffering=1)
+        self.infile = os.fdopen(parent_read)
+
+        # discard shell prelude
+        self.mark_()
+        self.receive_until_mark_()
+
+    def send(self, cmd: str) -> list[str]:
+        self.send_line_(cmd)
+        self.receive_skip_()
+        self.mark_()
+        return self.receive_until_mark_()
+
+    def __call__(self, cmd: str) -> list[str]:
+        return self.send(cmd)
+
+    def exit(self) -> None:
+        self.send_line_("exit")
+        self.child.wait()
+
+    # Private stuff
+
+    def mark_(self):
+        self.send_line_(f'echo "{self.watermark_()}"')
+
+    def receive_until_mark_(self) -> list[str]:
+        result: list[str] = []
+
+        line = self.receive_line_().strip("\r\n")
+        while line != self.watermark_():
+            print(line)
+            # do not include our marking machinery in user visible output
+            if self.watermark_() not in line:
+                result.append(line)
+            line = self.receive_line_().strip("\r\n")
+
+        return result
+
+    def watermark_(self):
+        return "<CRAM>"
+
+    def send_line_(self, line: str) -> None:
+        print(line, file=self.outfile)
+
+    def receive_line_(self) -> str:
+        return self.infile.readline()
+
+    def receive_skip_(self) -> None:
+        _ = self.receive_line_()
+
+
+def test(test_lines: list[str], exec: Callable[[str], list[str]]) -> list[str]:
+    """
+    Runs cram-like test on test_lines and returns the actual output lines
+
+    Uses `exec` to execute the command lines in test_lines
+    """
+    result: list[str] = []
+    for test_line in test_lines:
+        if not test_line.startswith("  "):  # comment line
+            result.append(test_line)
+        elif test_line.startswith("  $ "):  # command line
+            result.append(test_line)
+            output = exec(test_line.removeprefix("  $ "))
+            result.extend(map(lambda l: f"  {l}", output))
+
+    return result
+
+
+def main(test_file: str) -> None:
+    with open(test_file, "r") as fin:
+        lines = fin.read().replace("\r\n", "\n").split("\n")
+        shell = Powershell()
+        output = test(lines, shell)
+        output_file = f"{test_file.removesuffix(".t")}.err"
+        with open(output_file, "w", newline="\n") as fout:
+            fout.write("\n".join(output))
+
+
+if __name__ == "__main__":
+    main(sys.argv[1])

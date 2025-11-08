@@ -2,10 +2,11 @@ import os
 import subprocess
 import sys
 from typing import Callable
+from random import randint
 
 
 class Powershell:
-    def __init__(self):
+    def __init__(self, workdir: str):
         # Source - https://stackoverflow.com/a/54066021
         # Posted by Ondrej K., modified by community. See post 'Timeline' for change history
         # Retrieved 2025-11-08, License - CC BY-SA 4.0
@@ -13,7 +14,7 @@ class Powershell:
         (child_read, parent_write) = os.pipe()
         (parent_read, child_write) = os.pipe()
         self.child = subprocess.Popen(
-            ["powershell", "/NoLogo"], stdin=child_read, stdout=child_write
+            ["powershell", "/NoLogo"], stdin=child_read, stdout=child_write, cwd=workdir
         )
         self.outfile = os.fdopen(parent_write, "w", buffering=1)
         self.infile = os.fdopen(parent_read)
@@ -84,10 +85,23 @@ def test(test_lines: list[str], exec: Callable[[str], list[str]]) -> list[str]:
     return result
 
 
+def make_temp_dir(prefix: str) -> str:
+    os.makedirs(f"{prefix}/.cram", exist_ok=True)
+
+    uuid = randint(0, 2**31)
+    while os.path.exists(f"{prefix}/.cram/{uuid}"):
+        uuid = randint(0, 2**31)
+
+    temp_dir = f"{prefix}/.cram/{uuid}"
+    os.mkdir(temp_dir)
+    return temp_dir
+
+
 def main(test_file: str) -> None:
+    temp_dir = make_temp_dir(".")
     with open(test_file, "r") as fin:
         lines = fin.read().replace("\r\n", "\n").split("\n")
-        shell = Powershell()
+        shell = Powershell(workdir=temp_dir)
         output = test(lines, shell)
         output_file = f"{test_file.removesuffix(".t")}.err"
         with open(output_file, "w", newline="\n") as fout:

@@ -14,7 +14,11 @@ class Powershell:
         (child_read, parent_write) = os.pipe()
         (parent_read, child_write) = os.pipe()
         self.child = subprocess.Popen(
-            ["powershell", "/NoLogo"], stdin=child_read, stdout=child_write, cwd=workdir
+            ["powershell", "/NoLogo"],
+            stdin=child_read,
+            stdout=child_write,
+            stderr=child_write,
+            cwd=workdir,
         )
         self.outfile = os.fdopen(parent_write, "w", buffering=1)
         self.infile = os.fdopen(parent_read)
@@ -46,7 +50,6 @@ class Powershell:
 
         line = self.receive_line_().strip("\r\n")
         while line != self.watermark_():
-            print(line)
             # do not include our marking machinery in user visible output
             if self.watermark_() not in line:
                 result.append(line)

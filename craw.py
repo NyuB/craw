@@ -20,7 +20,10 @@ class Powershell:
         self.outfile.flush()
 
     def receive_line_(self) -> str:
-        return self.infile.readline()
+        """
+        Read a line from the underlying shell output, not including the line terminator
+        """
+        return self.infile.readline().strip("\r\n")
 
     def exit(self) -> None:
         self.send_line_("exit")
@@ -79,12 +82,12 @@ class Cram:
 
     def receive_until_mark_(self, mark: str) -> list[str]:
         result: list[str] = []
-        line = self.shell.receive_line_().strip("\r\n")
+        line = self.shell.receive_line_()
         while line != mark:
             # do not include our marking machinery in user visible output
             if mark not in line:
                 result.append(line)
-            line = self.shell.receive_line_().strip("\r\n")
+            line = self.shell.receive_line_()
         return result
 
     def watermark_(self, cmd: str) -> str:
@@ -161,8 +164,7 @@ def main(options: Options, test_file: str) -> None:
     env: dict[str, str] = {k: v for k, v in os.environ.items()}
     cram_special_variables: dict[str, str] = {"TESTDIR": str(os.path.abspath("."))}
     env.update(cram_special_variables)
-    shell = Powershell(workdir=temp_dir, env=env)
-    cram = Cram(shell, variables=cram_special_variables)
+    cram = Cram(Powershell(workdir=temp_dir, env=env), variables=cram_special_variables)
 
     with open(test_file, "r", encoding="utf-8") as fin:
         lines = fin.read().replace("\r\n", "\n").split("\n")

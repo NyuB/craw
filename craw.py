@@ -160,6 +160,9 @@ class Options:
         return ret
 
 
+bom_prefix = (b"\xef\xbb\xbf").decode("utf-8")
+
+
 def run_test(options: Options, test_file: str) -> None:
     temp_dir = make_temp_dir(".")
     env: dict[str, str] = {k: v for k, v in os.environ.items()}
@@ -168,7 +171,7 @@ def run_test(options: Options, test_file: str) -> None:
     cram = Cram(Powershell(workdir=temp_dir, env=env), variables=cram_special_variables)
 
     with open(test_file, "r", encoding="utf-8") as fin:
-        lines = fin.read().replace("\r\n", "\n").split("\n")
+        lines = fin.read().replace(bom_prefix, "").replace("\r\n", "\n").split("\n")
         output = test(lines, cram)
 
     output_file = (

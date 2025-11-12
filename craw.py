@@ -130,6 +130,7 @@ def make_temp_dir(prefix: str) -> str:
     return temp_dir
 
 
+# TODO support full cram options parsing
 class Options:
     interactive: bool = False
     yes: bool = False

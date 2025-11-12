@@ -8,7 +8,7 @@ Just a comment
   Lorem ipsum
 
 Meta-test, brace yourself:
-/!\ Powershell encoding defaults to UTF-16, and powershell UTF-8 defaults to 'BOM-prefixed UTF-8' which messes up the idnentation detection...
+/!\ Powershell encoding defaults to UTF-16, and powershell UTF-8 defaults to 'BOM-prefixed UTF-8' which messes up the indentation detection...
 TODO sanitize BOM prefix and detect encoding
   $ "  $ echo Promotion" | Out-File -Encoding default  meta.t
   $ "  $ echo Promoted" | Out-File -Append -Encoding default  meta.t

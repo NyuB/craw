@@ -3,6 +3,7 @@ import subprocess
 import sys
 from typing import Callable
 from random import randint
+from hashlib import md5
 
 
 class Powershell:
@@ -15,21 +16,21 @@ class Powershell:
         self.init_ipc_(workdir, env)
 
         # discard shell prelude
-        self.mark_()
-        self.receive_until_mark_()
+        mark = self.mark_("")
+        self.receive_until_mark_(mark)
 
         # Set variables
         for k, v in variables.items():
             self.send_line_(f'${k}="{v}"')
 
-        self.mark_()
-        self.receive_until_mark_()
+        mark = self.mark_("")
+        self.receive_until_mark_(mark)
 
     def send(self, cmd: str) -> list[str]:
         self.send_line_(cmd)
         self.receive_skip_()
-        self.mark_()
-        return self.receive_until_mark_()
+        mark = self.mark_(cmd)
+        return self.receive_until_mark_(mark)
 
     def __call__(self, cmd: str) -> list[str]:
         return self.send(cmd)
@@ -40,24 +41,29 @@ class Powershell:
 
     # Private stuff
 
-    def mark_(self):
-        self.send_line_(f'echo "{self.watermark_()}"')
+    watermark_count_ = 0
 
-    def receive_until_mark_(self) -> list[str]:
+    def mark_(self, cmd: str) -> str:
+        mark = self.watermark_(cmd)
+        self.send_line_(f'echo "{mark}"')
+        return mark
+
+    def receive_until_mark_(self, mark: str) -> list[str]:
         result: list[str] = []
-
         line = self.receive_line_().strip("\r\n")
-        while line != self.watermark_():
+        while line != mark:
             # do not include our marking machinery in user visible output
-            if self.watermark_() not in line:
+            if mark not in line:
                 result.append(line)
             line = self.receive_line_().strip("\r\n")
 
         return result
 
-    # TODO watermak mangling to disambiguate sub-outputs
-    def watermark_(self):
-        return "<CRAM>"
+    def watermark_(self, cmd: str) -> str:
+        self.watermark_count_ += 1
+        h = md5(str(self.watermark_count_).encode())
+        h.update(cmd.encode())
+        return f"<CRAM> {h.hexdigest()}"
 
     def send_line_(self, line: str) -> None:
         print(line, file=self.outfile)

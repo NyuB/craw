@@ -12,3 +12,6 @@ test-promote:
 	$(PY) craw.py -i -y test.t test_encodings.t
 	$(RMRF) .cram
 
+typecheck:
+	$(PY) -m pyrefly check --summarize-errors
+

@@ -160,7 +160,7 @@ class Options:
         return ret
 
 
-def main(options: Options, test_file: str) -> None:
+def run_test(options: Options, test_file: str) -> None:
     temp_dir = make_temp_dir(".")
     env: dict[str, str] = {k: v for k, v in os.environ.items()}
     cram_special_variables: dict[str, str] = {"TESTDIR": str(os.path.abspath("."))}
@@ -178,7 +178,12 @@ def main(options: Options, test_file: str) -> None:
         fout.write("\n".join(output))
 
 
+def main(options: Options, test_files: list[str]) -> None:
+    for test_file in test_files:
+        run_test(options, test_file)
+
+
 if __name__ == "__main__":
     options = Options()
     args = options.parse(sys.argv[1:])
-    main(options, args[0])
+    main(options, args[0:])

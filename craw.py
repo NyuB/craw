@@ -1,9 +1,19 @@
+from hashlib import md5
 import os
+from random import randint
 import subprocess
 import sys
+import typing
 from typing import Callable
-from random import randint
-from hashlib import md5
+import unittest
+
+
+class ShellProtocol(typing.Protocol):
+    def send_line(self, line: str) -> None:
+        raise NotImplementedError()
+
+    def receive_line(self) -> str:
+        raise NotImplementedError()
 
 
 class Powershell:
@@ -15,18 +25,18 @@ class Powershell:
         """
         self.init_ipc_(workdir, env)
 
-    def send_line_(self, line: str) -> None:
+    def send_line(self, line: str) -> None:
         print(line, file=self.outfile)
         self.outfile.flush()
 
-    def receive_line_(self) -> str:
+    def receive_line(self) -> str:
         """
         Read a line from the underlying shell output, not including the line terminator
         """
         return self.infile.readline().strip("\r\n")
 
     def exit(self) -> None:
-        self.send_line_("exit")
+        self.send_line("exit")
         self.child.wait()
 
     def init_ipc_(self, workdir: str, env: dict[str, str]):
@@ -49,22 +59,22 @@ class Powershell:
 
 
 class Cram:
-    def __init__(self, shell: Powershell, variables: dict[str, str]):
+    def __init__(self, shell: ShellProtocol, variables: dict[str, str]):
         self.shell = shell
         # discard shell prelude
         mark = self.mark_("")
         self.receive_until_mark_(mark)
 
-        # Set variables
+        # set variables, which differs from env variables in powershell
         for k, v in variables.items():
-            self.shell.send_line_(f'${k}="{v}"')
+            self.shell.send_line(f'${k}="{v}"')
 
         mark = self.mark_("")
         self.receive_until_mark_(mark)
 
     def send(self, cmd: str) -> list[str]:
-        self.shell.send_line_(cmd)
-        self.receive_skip_()
+        self.shell.send_line(cmd)
+        self.receive_skip_()  # skip command echo
         mark = self.mark_(cmd)
         return self.receive_until_mark_(mark)
 
@@ -77,17 +87,17 @@ class Cram:
 
     def mark_(self, cmd: str) -> str:
         mark = self.watermark_(cmd)
-        self.shell.send_line_(f'echo "{mark}"')
+        self.shell.send_line(f'echo "{mark}"')
         return mark
 
     def receive_until_mark_(self, mark: str) -> list[str]:
         result: list[str] = []
-        line = self.shell.receive_line_()
+        line = self.shell.receive_line()
         while line != mark:
             # do not include our marking machinery in user visible output
             if mark not in line:
                 result.append(line)
-            line = self.shell.receive_line_()
+            line = self.shell.receive_line()
         return result
 
     def watermark_(self, cmd: str) -> str:
@@ -97,7 +107,7 @@ class Cram:
         return f"<CRAM> {h.hexdigest()}"
 
     def receive_skip_(self) -> None:
-        _ = self.shell.receive_line_()
+        _ = self.shell.receive_line()
 
 
 def test(test_lines: list[str], exec: Callable[[str], list[str]]) -> list[str]:
@@ -190,3 +200,56 @@ if __name__ == "__main__":
     options = Options()
     args = options.parse(sys.argv[1:])
     main(options, args[0:])
+
+
+class Test(unittest.TestCase):
+    class RandomShell:
+        lines: list[str] = []
+        sent: list[str] = []
+        received: list[str] = []
+
+        def send_line(self, line: str) -> None:
+            self.sent.append(line)
+            self.lines.append(line)  # echo command
+            if line.startswith(
+                'echo "<CRAM>'
+            ):  # Only behave predictably for the watermarks
+                self.lines.append(line.removeprefix('echo "').removesuffix('"'))
+            else:
+                for i in range(3):
+                    self.lines.append(f"Resp {i}")
+
+        def receive_line(self) -> str:
+            if len(self.lines) == 0:
+                raise AssertionError(
+                    "No more line to receive",
+                    "sent=",
+                    self.sent,
+                    "received=",
+                    self.received,
+                )
+            to_receive = self.lines.pop(0)
+            self.received.append(to_receive)
+            return to_receive
+
+    def assertSubSet(self, sub, container):
+        not_a_member = [s for s in sub if s not in container]
+        if len(not_a_member) > 0:
+            raise AssertionError(
+                "Expected",
+                sub,
+                "to be a subset of",
+                container,
+                "but the following element are missing",
+                not_a_member,
+            )
+
+    def test_cram(self) -> None:
+        """
+        Smoke test
+        """
+        test_shell = Test.RandomShell()
+        cram = Cram(test_shell, {})
+        input_file = ["Comment", "  $ echo Ok", "  $ echo Youpi"]
+        output = test(input_file, cram)
+        self.assertSubSet(input_file, output)

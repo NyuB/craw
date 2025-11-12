@@ -41,7 +41,7 @@ class Powershell:
 
     # Private stuff
 
-    watermark_count_ = 0
+    watermark_count_ = randint(0, 2**31)
 
     def mark_(self, cmd: str) -> str:
         mark = self.watermark_(cmd)
@@ -56,7 +56,6 @@ class Powershell:
             if mark not in line:
                 result.append(line)
             line = self.receive_line_().strip("\r\n")
-
         return result
 
     def watermark_(self, cmd: str) -> str:
@@ -67,6 +66,7 @@ class Powershell:
 
     def send_line_(self, line: str) -> None:
         print(line, file=self.outfile)
+        self.outfile.flush()
 
     def receive_line_(self) -> str:
         return self.infile.readline()
@@ -159,14 +159,14 @@ def main(options: Options, test_file: str) -> None:
     env.update(cram_special_variables)
     shell = Powershell(workdir=temp_dir, env=env, variables=cram_special_variables)
 
-    with open(test_file, "r") as fin:
+    with open(test_file, "r", encoding="utf-8") as fin:
         lines = fin.read().replace("\r\n", "\n").split("\n")
         output = test(lines, shell)
 
     output_file = (
         test_file if options.promote() else f"{test_file.removesuffix(".t")}.err"
     )
-    with open(output_file, "w", newline="\n") as fout:
+    with open(output_file, "w", encoding="utf-8", newline="\n") as fout:
         fout.write("\n".join(output))
 
 

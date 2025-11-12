@@ -8,14 +8,16 @@ Just a comment
   Lorem ipsum
 
 Meta-test, brace yourself:
-  $ echo "  $ echo Promotion" > meta.t
-  $ echo "  $ echo Promoted" >> meta.t
+/!\ Powershell encoding defaults to UTF-16, and powershell UTF-8 defaults to 'BOM-prefixed UTF-8' which messes up the idnentation detection...
+TODO sanitize BOM prefix and detect encoding
+  $ "  $ echo Promotion" | Out-File -Encoding default  meta.t
+  $ "  $ echo Promoted" | Out-File -Append -Encoding default  meta.t
   $ cat meta.t
     $ echo Promotion
     $ echo Promoted
   $ py $TESTDIR/craw.py -i -y meta.t
   $ cat meta.t
     $ echo Promotion
-  
+    Promotion
     $ echo Promoted
-  
+    Promoted

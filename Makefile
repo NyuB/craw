@@ -8,9 +8,7 @@ test:
 	$(PY) -m unittest craw.py
 	$(PY) craw.py $(TESTS)
 	$(RMRF) .cram
-	git --no-pager diff -p --no-index -- test.t test.err
-	git --no-pager diff -p --no-index -- test_encodings.t test_encodings.err
-	git --no-pager diff -p --no-index -- test_variables.t test_variables.err
+	$(PY) test_err_t_diffs.py $(TESTS)
 
 test-promote:
 	$(PY) craw.py -i -y $(TESTS)

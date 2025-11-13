@@ -137,7 +137,7 @@ def make_temp_dir(prefix: str) -> str:
 
     temp_dir = f"{prefix}/.cram/{uuid}"
     os.mkdir(temp_dir)
-    return temp_dir
+    return os.path.abspath(temp_dir)
 
 
 # TODO support full cram options parsing
@@ -176,7 +176,24 @@ bom_prefix = (b"\xef\xbb\xbf").decode("utf-8")
 def run_test(options: Options, test_file: str) -> None:
     temp_dir = make_temp_dir(".")
     env: dict[str, str] = {k: v for k, v in os.environ.items()}
-    cram_special_variables: dict[str, str] = {"TESTDIR": str(os.path.abspath("."))}
+    cram_special_variables: dict[str, str] = {
+        # Paths
+        "TESTDIR": os.path.abspath(os.path.dirname(test_file)),
+        "TMPDIR": temp_dir,
+        "TEMP": temp_dir,
+        "TMP": temp_dir,
+        "CRAMTMP": temp_dir,
+        "TESTFILE": os.path.basename(test_file),
+        "TESTSHELL": "powershell.exe",
+        # Misc
+        "CDPATH": "",
+        "COLUMNS": "80",
+        "GREP_OPTIONS": "",
+        "LANGUAGE": "C",
+        "LANG": "C",
+        "LC_ALL": "C",
+        "TZ": "GMT",
+    }
     env.update(cram_special_variables)
     cram = Cram(Powershell(workdir=temp_dir, env=env), variables=cram_special_variables)
 

@@ -1,14 +1,13 @@
 import difflib
-from dataclasses import dataclass
-from hashlib import md5
 import os
-from random import randint
 import subprocess
 import sys
 import typing
-from typing import Callable, Iterable
 import unittest
-import difflib
+from dataclasses import dataclass
+from hashlib import md5
+from random import randint
+from typing import Callable, Iterable
 
 
 class ShellProtocol(typing.Protocol):
@@ -243,9 +242,7 @@ def main(options: Options, test_files: list[str]) -> None:
     print("")
     if len(failures) > 0:
         for test_file, result in failures:
-            print(
-                *result.diff(err_file(test_file), test_file), sep="\n"
-            )
+            print(*result.diff(err_file(test_file), test_file), sep="\n")
         exit(1)
 
 

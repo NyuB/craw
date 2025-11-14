@@ -20,3 +20,11 @@ typecheck:
 clean:
 	-del *.err
 	-$(RMRF) .cram
+
+fmt:
+	py -m isort .
+	py -m black .
+
+fmt-check:
+	py -m isort --check --diff .
+	py -m black --check .

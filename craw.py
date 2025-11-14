@@ -1,11 +1,14 @@
+import difflib
+from dataclasses import dataclass
 from hashlib import md5
 import os
 from random import randint
 import subprocess
 import sys
 import typing
-from typing import Callable
+from typing import Callable, Iterable
 import unittest
+import difflib
 
 
 class ShellProtocol(typing.Protocol):
@@ -55,7 +58,7 @@ class Powershell:
             env=env,
         )
         self.outfile = os.fdopen(parent_write, "w", buffering=1)
-        self.infile = os.fdopen(parent_read)
+        self.infile = os.fdopen(parent_read, newline="\n")
 
 
 class Cram:
@@ -110,7 +113,24 @@ class Cram:
         _ = self.shell.receive_line()
 
 
-def test(test_lines: list[str], exec: Callable[[str], list[str]]) -> list[str]:
+@dataclass
+class TestResult:
+    expected: list[str]
+    actual: list[str]
+
+    def diff(self, file_t, file_err):
+        return [
+            l.strip("\r\n")
+            for l in difflib.unified_diff(
+                self.actual, self.expected, fromfile=file_err, tofile=file_t
+            )
+        ]
+
+    def success(self):
+        return self.expected == self.actual
+
+
+def test(test_lines: list[str], exec: Callable[[str], list[str]]) -> TestResult:
     """
     Runs cram-like test on test_lines and returns the actual output lines
 
@@ -125,7 +145,7 @@ def test(test_lines: list[str], exec: Callable[[str], list[str]]) -> list[str]:
             output = exec(test_line.removeprefix("  $ "))
             result.extend(map(lambda l: f"  {l}", output))
 
-    return result
+    return TestResult(expected=test_lines, actual=result)
 
 
 def make_temp_dir(prefix: str) -> str:
@@ -173,7 +193,11 @@ class Options:
 bom_prefix = (b"\xef\xbb\xbf").decode("utf-8")
 
 
-def run_test(options: Options, test_file: str) -> None:
+def err_file(test_file: str) -> str:
+    return test_file.removesuffix(".t") + ".err"
+
+
+def run_test(options: Options, test_file: str) -> TestResult:
     temp_dir = make_temp_dir(".")
     env: dict[str, str] = {k: v for k, v in os.environ.items()}
     cram_special_variables: dict[str, str] = {
@@ -199,18 +223,30 @@ def run_test(options: Options, test_file: str) -> None:
 
     with open(test_file, "r", encoding="utf-8") as fin:
         lines = fin.read().replace(bom_prefix, "").replace("\r\n", "\n").split("\n")
-        output = test(lines, cram)
+        test_result = test(lines, cram)
 
-    output_file = (
-        test_file if options.promote() else f"{test_file.removesuffix(".t")}.err"
-    )
+    output_file = test_file if options.promote() else err_file(test_file)
     with open(output_file, "w", encoding="utf-8", newline="\n") as fout:
-        fout.write("\n".join(output))
+        fout.write("\n".join(test_result.actual))
+    return test_result
 
 
 def main(options: Options, test_files: list[str]) -> None:
+    failures: list[tuple[str, TestResult]] = []
     for test_file in test_files:
-        run_test(options, test_file)
+        result = run_test(options, test_file)
+        if result.success():
+            print(".", end="")
+        else:
+            failures.append((os.path.basename(test_file), result))
+            print("!", end="")
+    print("")
+    if len(failures) > 0:
+        for test_file, result in failures:
+            print(
+                *result.diff(err_file(test_file), test_file), sep="\n"
+            )
+        exit(1)
 
 
 if __name__ == "__main__":
@@ -249,7 +285,7 @@ class Test(unittest.TestCase):
             self.received.append(to_receive)
             return to_receive
 
-    def assertSubSet(self, sub, container):
+    def assertSubSet[T](self, sub: Iterable[T], container: Iterable[T]):
         not_a_member = [s for s in sub if s not in container]
         if len(not_a_member) > 0:
             raise AssertionError(
@@ -269,4 +305,4 @@ class Test(unittest.TestCase):
         cram = Cram(test_shell, {})
         input_file = ["Comment", "  $ echo Ok", "  $ echo Youpi"]
         output = test(input_file, cram)
-        self.assertSubSet(input_file, output)
+        self.assertSubSet(input_file, output.actual)

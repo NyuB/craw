@@ -17,3 +17,6 @@ test-promote:
 typecheck:
 	$(PY) -m pyrefly check --summarize-errors
 
+clean:
+	-del *.err
+	-$(RMRF) .cram

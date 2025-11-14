@@ -7,12 +7,10 @@ TESTS=test.t test_encodings.t test_variables.t
 test:
 	$(PY) -m unittest craw.py
 	$(PY) craw.py $(TESTS)
-	$(RMRF) .cram
 	$(PY) test_err_t_diffs.py $(TESTS)
 
 test-promote:
 	$(PY) craw.py -i -y $(TESTS)
-	$(RMRF) .cram
 
 typecheck:
 	$(PY) -m pyrefly check --summarize-errors

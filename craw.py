@@ -1,5 +1,6 @@
 import difflib
 import os
+import shutil
 import subprocess
 import sys
 import typing
@@ -163,6 +164,7 @@ def make_temp_dir(prefix: str) -> str:
 class Options:
     interactive: bool = False
     yes: bool = False
+    keep_tmpdir: bool = False
 
     def promote(self) -> bool:
         return self.interactive and self.yes
@@ -180,6 +182,8 @@ class Options:
             elif arg == "--promote":
                 self.yes = True
                 self.interactive = True
+            elif arg == "--keep-tmpdir":
+                self.keep_tmpdir = True
             elif arg == "--":
                 ret.extend(args[i + 1 :])
                 break
@@ -218,16 +222,24 @@ def run_test(options: Options, test_file: str) -> TestResult:
         "TZ": "GMT",
     }
     env.update(cram_special_variables)
-    cram = Cram(Powershell(workdir=temp_dir, env=env), variables=cram_special_variables)
+    shell = Powershell(workdir=temp_dir, env=env)
+    try:
+        cram = Cram(
+            shell, variables=cram_special_variables
+        )
 
-    with open(test_file, "r", encoding="utf-8") as fin:
-        lines = fin.read().replace(bom_prefix, "").replace("\r\n", "\n").split("\n")
-        test_result = test(lines, cram)
+        with open(test_file, "r", encoding="utf-8") as fin:
+            lines = fin.read().replace(bom_prefix, "").replace("\r\n", "\n").split("\n")
+            test_result = test(lines, cram)
 
-    output_file = test_file if options.promote() else err_file(test_file)
-    with open(output_file, "w", encoding="utf-8", newline="\n") as fout:
-        fout.write("\n".join(test_result.actual))
-    return test_result
+        output_file = test_file if options.promote() else err_file(test_file)
+        with open(output_file, "w", encoding="utf-8", newline="\n") as fout:
+            fout.write("\n".join(test_result.actual))
+        return test_result
+    finally:
+        shell.exit()
+        if not options.keep_tmpdir:
+            shutil.rmtree(temp_dir)
 
 
 def main(options: Options, test_files: list[str]) -> None:

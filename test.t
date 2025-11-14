@@ -28,3 +28,13 @@ Meta-test, brace yourself:
     Promotion
     $ echo Promoted
     Promoted
+
+Tests are executed in a temp directory placed '.cram' root folder
+By default, the temp dir is cleaned up after tests
+  $ (Get-ChildItem .cram).Count
+  0
+It can be kept with a flag
+  $ py $TESTDIR/craw.py --keep-tmpdir meta.t
+  .
+  $ (Get-ChildItem .cram).Count
+  1

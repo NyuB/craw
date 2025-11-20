@@ -8,7 +8,7 @@ import unittest
 from dataclasses import dataclass
 from hashlib import md5
 from random import randint
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Literal
 
 
 class ShellProtocol(typing.Protocol):
@@ -16,6 +16,16 @@ class ShellProtocol(typing.Protocol):
         raise NotImplementedError()
 
     def receive_line(self) -> str:
+        raise NotImplementedError()
+
+    def skip_send_echo(self) -> None:
+        """
+        Call this immediately after send_line to avoid receiving echos of the sent command.
+
+        **Warning**: Do not call this if there is still pending receptions, since those will be skipped instead of the intended echo
+
+        **Note**: The fact that this is implemention-defined and not just a call to `receive_line()` is a hack while investigating a weird additional line endings sent by cmd.exe after each command
+        """
         raise NotImplementedError()
 
 
@@ -37,6 +47,9 @@ class Powershell:
         Read a line from the underlying shell output, not including the line terminator
         """
         return self.infile.readline().strip("\r\n")
+
+    def skip_send_echo(self) -> None:
+        _ = self.receive_line()
 
     def exit(self) -> None:
         self.send_line("exit")
@@ -61,6 +74,54 @@ class Powershell:
         self.infile = os.fdopen(parent_read, newline="\n")
 
 
+class Cmd:
+    def __init__(self, workdir: str, env: dict[str, str]):
+        """
+        Parameters:
+            env(dict[str,str]): environment variables
+        """
+        self.init_ipc_(workdir, env)
+
+    def send_line(self, line: str) -> None:
+        escaped = line.replace('"', '"') if line.startswith("echo") else line
+
+        print(escaped, file=self.outfile)
+        self.outfile.flush()
+
+    def receive_line(self) -> str:
+        """
+        Read a line from the underlying shell output, not including the line terminator
+        """
+        res = self.infile.readline().strip("\r\n")
+        return res
+
+    def skip_send_echo(self) -> None:
+        _ = self.receive_line()
+        _ = self.receive_line()
+
+    def exit(self) -> None:
+        self.send_line("exit")
+        self.child.wait()
+
+    def init_ipc_(self, workdir: str, env: dict[str, str]):
+        # Source - https://stackoverflow.com/a/54066021
+        # Posted by Ondrej K., modified by community. See post 'Timeline' for change history
+        # Retrieved 2025-11-08, License - CC BY-SA 4.0
+
+        (child_read, parent_write) = os.pipe()
+        (parent_read, child_write) = os.pipe()
+        self.child = subprocess.Popen(
+            ["cmd"],
+            stdin=child_read,
+            stdout=child_write,
+            stderr=child_write,
+            cwd=workdir,
+            env=env,
+        )
+        self.outfile = os.fdopen(parent_write, "w", buffering=1)
+        self.infile = os.fdopen(parent_read, newline="\r\n")
+
+
 class Cram:
     def __init__(self, shell: ShellProtocol, variables: dict[str, str]):
         self.shell = shell
@@ -77,7 +138,7 @@ class Cram:
 
     def send(self, cmd: str) -> list[str]:
         self.shell.send_line(cmd)
-        self.receive_skip_()  # skip command echo
+        self.shell.skip_send_echo()
         mark = self.mark_(cmd)
         return self.receive_until_mark_(mark)
 
@@ -90,7 +151,7 @@ class Cram:
 
     def mark_(self, cmd: str) -> str:
         mark = self.watermark_(cmd)
-        self.shell.send_line(f'echo "{mark}"')
+        self.shell.send_line(f"echo {mark}")
         return mark
 
     def receive_until_mark_(self, mark: str) -> list[str]:
@@ -107,10 +168,8 @@ class Cram:
         self.watermark_count_ += 1
         h = md5(str(self.watermark_count_).encode())
         h.update(cmd.encode())
-        return f"<CRAM> {h.hexdigest()}"
-
-    def receive_skip_(self) -> None:
-        _ = self.shell.receive_line()
+        h.update("CRAM".encode())
+        return f"{h.hexdigest()}"
 
 
 @dataclass
@@ -165,6 +224,7 @@ class Options:
     interactive: bool = False
     yes: bool = False
     keep_tmpdir: bool = False
+    shell: type[Powershell] | type[Cmd] = Powershell
 
     def promote(self) -> bool:
         return self.interactive and self.yes
@@ -184,6 +244,10 @@ class Options:
                 self.interactive = True
             elif arg == "--keep-tmpdir":
                 self.keep_tmpdir = True
+            elif arg == "--shell=powershell":
+                self.shell = Powershell
+            elif arg == "--shell=cmd":
+                self.shell = Cmd
             elif arg == "--":
                 ret.extend(args[i + 1 :])
                 break
@@ -222,11 +286,9 @@ def run_test(options: Options, test_file: str) -> TestResult:
         "TZ": "GMT",
     }
     env.update(cram_special_variables)
-    shell = Powershell(workdir=temp_dir, env=env)
+    shell = options.shell(workdir=temp_dir, env=env)
     try:
-        cram = Cram(
-            shell, variables=cram_special_variables
-        )
+        cram = Cram(shell, variables=cram_special_variables)
 
         with open(test_file, "r", encoding="utf-8") as fin:
             lines = fin.read().replace(bom_prefix, "").replace("\r\n", "\n").split("\n")

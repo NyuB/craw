@@ -73,9 +73,6 @@ class Powershell(WithInterProcessCommunication):
         self.outfile.flush()
 
     def receive_line(self) -> str:
-        """
-        Read a line from the underlying shell output, not including the line terminator
-        """
         return self.infile.readline().strip("\r\n")
 
     def skip_send_echo(self) -> None:
@@ -101,9 +98,6 @@ class Cmd(WithInterProcessCommunication):
         self.outfile.flush()
 
     def receive_line(self) -> str:
-        """
-        Read a line from the underlying shell output, not including the line terminator
-        """
         res = self.infile.readline().strip("\r\n")
         return res
 
@@ -130,10 +124,14 @@ class Cram:
         mark = self.mark_("")
         self.receive_until_mark_(mark)
 
-    def send(self, cmd: str) -> list[str]:
-        self.shell.send_line(cmd)
+    def send(self, command: str) -> list[str]:
+        """
+        Send a command to the underlying shell
+        Returns: the line sent in response to the command by the shell
+        """
+        self.shell.send_line(command)
         self.shell.skip_send_echo()
-        mark = self.mark_(cmd)
+        mark = self.mark_(command)
         return self.receive_until_mark_(mark)
 
     def __call__(self, cmd: str) -> list[str]:
@@ -143,12 +141,21 @@ class Cram:
 
     watermark_count_ = randint(0, 2**31)
 
-    def mark_(self, cmd: str) -> str:
-        mark = self.watermark_(cmd)
+    def mark_(self, command: str) -> str:
+        """
+        Echoes a hash of the given `command` to the underlying shell, later used to detect when the command completes
+        Returns: the echoed hash
+        """
+        mark = self.watermark_(command)
         self.shell.send_line(f"echo {mark}")
         return mark
 
     def receive_until_mark_(self, mark: str) -> list[str]:
+        """
+        Read lines repeatedly, waiting for the given `mark` to be echoed by the underlying shell.
+        All lines containing `mark` will be ignored, effectively ignoring the echo of the `mark`
+        Returns: the lines received before `mark`
+        """
         result: list[str] = []
         line = self.shell.receive_line()
         while line != mark:
@@ -158,10 +165,13 @@ class Cram:
             line = self.shell.receive_line()
         return result
 
-    def watermark_(self, cmd: str) -> str:
+    def watermark_(self, command: str) -> str:
+        """
+        Returns: a hash that can be used to uniquely identify the given `command`
+        """
         self.watermark_count_ += 1
         h = md5(str(self.watermark_count_).encode())
-        h.update(cmd.encode())
+        h.update(command.encode())
         h.update("CRAM".encode())
         return f"{h.hexdigest()}"
 
@@ -225,6 +235,7 @@ class Options:
 
     def parse(self, args: list[str]) -> list[str]:
         """
+        Parse options among the given `args` and update `self` accordingly
         Returns: the given arguments with options filtered out
         """
         ret: list[str] = []

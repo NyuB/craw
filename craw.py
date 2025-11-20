@@ -29,14 +29,46 @@ class ShellProtocol(typing.Protocol):
         raise NotImplementedError()
 
 
-class Powershell:
+class WithInterProcessCommunication:
+    def __init__(
+        self, command: list[str], workdir: str, env: dict[str, str], newline: str
+    ):
+        """
+        Parameters:
+            env(dict[str,str]): environment variables
+        """
+        self.init_ipc(command, workdir, env, newline)
+
+    def init_ipc(
+        self, command: list[str], workdir: str, env: dict[str, str], newline: str
+    ):
+        # Source - https://stackoverflow.com/a/54066021
+        # Posted by Ondrej K., modified by community. See post 'Timeline' for change history
+        # Retrieved 2025-11-08, License - CC BY-SA 4.0
+
+        (child_read, parent_write) = os.pipe()
+        (parent_read, child_write) = os.pipe()
+        self.child = subprocess.Popen(
+            command,
+            stdin=child_read,
+            stdout=child_write,
+            stderr=child_write,
+            cwd=workdir,
+            env=env,
+        )
+        self.outfile = os.fdopen(parent_write, "w", buffering=1)
+        self.infile = os.fdopen(parent_read, newline=newline)
+
+
+class Powershell(WithInterProcessCommunication):
     def __init__(self, workdir: str, env: dict[str, str]):
         """
         Parameters:
             env(dict[str,str]): environment variables
-            variables(dict[str,str]): variables set as prelude to the powershell. Will be accessible as `$var`, compared to `$env:var` for env variables
         """
-        self.init_ipc_(workdir, env)
+        WithInterProcessCommunication.__init__(
+            self, ["powershell", "/NoLogo"], workdir, env, "\n"
+        )
 
     def send_line(self, line: str) -> None:
         print(line, file=self.outfile)
@@ -55,32 +87,14 @@ class Powershell:
         self.send_line("exit")
         self.child.wait()
 
-    def init_ipc_(self, workdir: str, env: dict[str, str]):
-        # Source - https://stackoverflow.com/a/54066021
-        # Posted by Ondrej K., modified by community. See post 'Timeline' for change history
-        # Retrieved 2025-11-08, License - CC BY-SA 4.0
 
-        (child_read, parent_write) = os.pipe()
-        (parent_read, child_write) = os.pipe()
-        self.child = subprocess.Popen(
-            ["powershell", "/NoLogo"],
-            stdin=child_read,
-            stdout=child_write,
-            stderr=child_write,
-            cwd=workdir,
-            env=env,
-        )
-        self.outfile = os.fdopen(parent_write, "w", buffering=1)
-        self.infile = os.fdopen(parent_read, newline="\n")
-
-
-class Cmd:
+class Cmd(WithInterProcessCommunication):
     def __init__(self, workdir: str, env: dict[str, str]):
         """
         Parameters:
             env(dict[str,str]): environment variables
         """
-        self.init_ipc_(workdir, env)
+        WithInterProcessCommunication.__init__(self, ["cmd"], workdir, env, "\r\n")
 
     def send_line(self, line: str) -> None:
         escaped = line.replace('"', '"') if line.startswith("echo") else line
@@ -102,24 +116,6 @@ class Cmd:
     def exit(self) -> None:
         self.send_line("exit")
         self.child.wait()
-
-    def init_ipc_(self, workdir: str, env: dict[str, str]):
-        # Source - https://stackoverflow.com/a/54066021
-        # Posted by Ondrej K., modified by community. See post 'Timeline' for change history
-        # Retrieved 2025-11-08, License - CC BY-SA 4.0
-
-        (child_read, parent_write) = os.pipe()
-        (parent_read, child_write) = os.pipe()
-        self.child = subprocess.Popen(
-            ["cmd"],
-            stdin=child_read,
-            stdout=child_write,
-            stderr=child_write,
-            cwd=workdir,
-            env=env,
-        )
-        self.outfile = os.fdopen(parent_write, "w", buffering=1)
-        self.infile = os.fdopen(parent_read, newline="\r\n")
 
 
 class Cram:

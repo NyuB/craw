@@ -20,4 +20,6 @@
 - `make test` to test craw itself
 - `make typecheck` to ensure type soundness
 
-Tests consist mostly of end-to-end `.t` files ran by craw itself, a minimal unittest harness is set up for more involved testing (property tests, fuzzing or error handling will probably go there)
+Tests consist of end-to-end `.t` files ran by craw itself
+
+Future work could necessitate a unittest harness for more involved testing (property tests, fuzzing or error handling will probably go there).

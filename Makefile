@@ -5,7 +5,6 @@ RMRF=rd /S /Q
 TESTS=test.t test_encodings.t test_variables.t
 
 test:
-	$(PY) -m unittest craw.py
 	$(PY) craw.py $(TESTS)
 	$(PY) test_err_t_diffs.py $(TESTS)
 

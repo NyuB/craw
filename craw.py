@@ -3,15 +3,13 @@ import os
 import shutil
 import subprocess
 import sys
-import typing
-import unittest
 from dataclasses import dataclass
 from hashlib import md5
 from random import randint
-from typing import Callable, Iterable, Literal
+from typing import Callable, Protocol
 
 
-class ShellProtocol(typing.Protocol):
+class ShellProtocol(Protocol):
     def send_line(self, line: str) -> None:
         raise NotImplementedError()
 

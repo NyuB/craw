@@ -181,7 +181,7 @@ class TestResult:
     expected: list[str]
     actual: list[str]
 
-    def diff(self, file_t, file_err):
+    def diff(self, file_t, file_err) -> list[str]:
         return [
             l.strip("\r\n")
             for l in difflib.unified_diff(

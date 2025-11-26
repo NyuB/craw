@@ -6,7 +6,7 @@ import sys
 from dataclasses import dataclass
 from hashlib import md5
 from random import randint
-from typing import Callable, Protocol, Never
+from typing import Callable, Never, Protocol
 
 
 class ShellProtocol(Protocol):
@@ -16,14 +16,19 @@ class ShellProtocol(Protocol):
     def receive_line(self) -> str:
         raise NotImplementedError()
 
-    def skip_send_echo(self) -> None:
+    def send_echo_no_newline(self, content: str) -> None:
         """
-        Call this immediately after send_line to avoid receiving echos of the sent command.
-
-        **Warning**: Do not call this if there is still pending receptions, since those will be skipped instead of the intended echo
-
-        **Note**: The fact that this is implemention-defined and not just a call to `receive_line()` is a hack while investigating a weird additional line endings sent by cmd.exe after each command
+        Sends the appropriate command to echo `content` without trailing newline (this is for you, cmd.exe)
         """
+        raise NotImplementedError()
+
+    def send_echo_last_error(self) -> None:
+        """
+        Sends the appropriate command to echo the error code of the last command
+        """
+        raise NotImplementedError()
+
+    def is_ok_error_code(self, code: str) -> bool:
         raise NotImplementedError()
 
 
@@ -75,12 +80,18 @@ class Powershell(WithInterProcessCommunication):
     def receive_line(self) -> str:
         return self.infile.readline().strip("\r\n")
 
-    def skip_send_echo(self) -> None:
-        _ = self.receive_line()
-
     def exit(self) -> None:
         self.send_line("exit")
         self.child.wait()
+
+    def send_echo_last_error(self) -> None:
+        self.send_line("echo $?")
+
+    def send_echo_no_newline(self, content: str) -> None:
+        self.send_line(f"echo {content}")
+
+    def is_ok_error_code(self, code: str) -> bool:
+        return code == "True"
 
 
 class Cmd(WithInterProcessCommunication):
@@ -93,21 +104,27 @@ class Cmd(WithInterProcessCommunication):
 
     def send_line(self, line: str) -> None:
         escaped = line.replace('"', '"') if line.startswith("echo") else line
-
-        print(escaped, file=self.outfile)
+        print(f"cmd /c {escaped}", file=self.outfile)
         self.outfile.flush()
 
     def receive_line(self) -> str:
         res = self.infile.readline().strip("\r\n")
         return res
 
-    def skip_send_echo(self) -> None:
-        _ = self.receive_line()
-        _ = self.receive_line()
-
     def exit(self) -> None:
-        self.send_line("exit")
+        print("exit", file=self.outfile)
         self.child.wait()
+
+    def send_echo_last_error(self) -> None:
+        self.send_echo_no_newline("%errorlevel%")
+
+    def send_echo_no_newline(self, content: str) -> None:
+        # https://stackoverflow.com/questions/7105433/windows-batch-echo-without-new-line#comment8520146_7105690
+        # avoids using echo which sends an extra newline
+        print(f"<nul set/p ={content}", file=self.outfile)
+
+    def is_ok_error_code(self, code: str) -> bool:
+        return code == "0"
 
 
 class Cram:
@@ -130,9 +147,15 @@ class Cram:
         Returns: the line sent in response to the command by the shell
         """
         self.shell.send_line(command)
-        self.shell.skip_send_echo()
+        _ = self.shell.receive_line()  # skip command echo
+        self.shell.send_echo_last_error()
         mark = self.mark_(command)
-        return self.receive_until_mark_(mark)
+        out = self.receive_until_mark_(mark)
+        code = out[-1]
+        out = out[:-2]  # discard error code and it's echo command
+        if not self.shell.is_ok_error_code(code):
+            out.append(f"[{code}]")
+        return out
 
     def __call__(self, cmd: str) -> list[str]:
         return self.send(cmd)
@@ -147,7 +170,7 @@ class Cram:
         Returns: the echoed hash
         """
         mark = self.watermark_(command)
-        self.shell.send_line(f"echo {mark}")
+        self.shell.send_echo_no_newline(mark)
         return mark
 
     def receive_until_mark_(self, mark: str) -> list[str]:

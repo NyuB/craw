@@ -13,7 +13,7 @@
 - ✅ Promotion of .err to .t via `-i -y` flags (`-y` and `-i` are not supported in isolation)
 - ✅ Cram env variables (duplicated as powershell env items and proper variables)
 - ✅ 'Test framework behaviour', i.e. non-zero return code and diff display when .err differs from .t
-- ❌ Display error codes after command if non-zero
+- ✅ Display error codes after command if non-zero
 - ❌ Regular expression for expected output
 - ❌ Options config via .cramrc
 - ❌ Options config via CRAM env variable

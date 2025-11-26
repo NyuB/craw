@@ -18,6 +18,9 @@ Just a comment
   Content
   $ cat $TESTDIR/test_resource.txt
   Lorem ipsum
+In case of error, error codes are displayed between brackets
+  $ cat oops.txt 2> swallow_error_message.txt
+  [False]
 
 Meta-test, brace yourself:
   $ "  $ echo Promotion" | Out-File -Encoding default  meta.t
@@ -35,6 +38,7 @@ Meta-test, brace yourself:
      $ echo Promoted
   -  Promoted
    
+  [False]
   $ cat meta.t
     $ echo Promotion
     Promotion

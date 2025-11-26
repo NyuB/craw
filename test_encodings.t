@@ -14,6 +14,7 @@ UTF-8 (no BOM)
      $ echo Promoted
   -  Promoted
    
+  [False]
   $ cat default.t
     $ echo Promotion
     Promotion
@@ -36,6 +37,7 @@ UTF-8
      $ echo Promoted
   -  Promoted
    
+  [False]
   $ cat utf8.t
     $ echo Promotion
     Promotion

@@ -223,7 +223,10 @@ def make_temp_dir(prefix: str) -> str:
     return os.path.abspath(temp_dir)
 
 
-# TODO support full cram options parsing
+# TODO (feature parity) support full cram option set
+# TODO (feature parity) support loading from .cramrc file
+# TODO (feature parity) support loading from CRAM env variable
+# TODO support specifying options in the .t file
 class Options:
     interactive: bool = False
     yes: bool = False
@@ -295,6 +298,7 @@ def run_test(options: Options, test_file: str) -> TestResult:
     try:
         cram = Cram(shell, variables=cram_special_variables)
 
+        # TODO support non-utf-8 encodings
         with open(test_file, "r", encoding="utf-8") as fin:
             lines = fin.read().replace(bom_prefix, "").replace("\r\n", "\n").split("\n")
             test_result = test(lines, cram)

@@ -1,6 +1,6 @@
 # Craw
 
-[Cram tests](https://bitheap.org/cram/) for Windows Powershell
+[Cram tests](https://bitheap.org/cram/) runnable on Windows Powershell and Cmd
 
 ## Features
 
@@ -15,6 +15,9 @@
 - ✅ 'Test framework behaviour', i.e. non-zero return code and diff display when .err differs from .t
 - ❌ Display error codes after command if non-zero
 - ❌ Regular expression for expected output
+- ❌ Options config via .cramrc
+- ❌ Options config via CRAM env variable
+- ❌ Full options and flags from cram (at least detected and noticed if not relevant)
 
 ## Contribute
 

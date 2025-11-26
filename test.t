@@ -10,16 +10,20 @@ Usage
     --keep-tmpdir                   keep temporary directories
     --shell={cmd|powershell}        shell to use for running tests (default: powershell)
   
-Just a comment  
-  $ echo Test
-  Test
+Non indented lines are just comments
+Lines starting with '  $ ' are shell commands 
+Lines starting with '  ' are the expected output of the shell commands above
+  $ echo Youpi
+  Youpi
   $ echo Content > test.txt
   $ cat test.txt
   Content
+The env variable TESTDIR is set to the directory from which craw is executed
   $ cat $TESTDIR/test_resource.txt
   Lorem ipsum
-In case of error, error codes are displayed between brackets
-  $ cat oops.txt 2> swallow_error_message.txt
+If the shell command ends up failing, it's exit code is displayed between brackets after the command output
+(here we swallow the error message to avoid flakiness of paths and windows error messages translation)
+  $ cat non_existing_file.txt 2> swallow_error_message
   [False]
 
 Meta-test, brace yourself:

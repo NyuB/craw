@@ -11,8 +11,8 @@ test:
 	$(PY) test_err_t_diffs.py $(TESTS) $(TESTS_CMD)
 
 test-promote:
-	$(PY) craw.py -i -y $(TESTS)
-	$(PY) craw.py -i -y --shell=cmd $(TESTS_CMD)
+	-$(PY) craw.py -i -y $(TESTS)
+	-$(PY) craw.py -i -y --shell=cmd $(TESTS_CMD)
 
 typecheck:
 	$(PY) -m pyrefly check --summarize-errors

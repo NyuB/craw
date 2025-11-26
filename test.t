@@ -1,6 +1,6 @@
 Usage
   $ py $TESTDIR/craw.py --help
-  Usage: --help [OPTIONS] TESTS...
+  Usage: craw.py [OPTIONS] TESTS...
   OPTIONS:
   
     -h, --help                      show this help message and exit

@@ -19,6 +19,36 @@
 - ❌ Options config via CRAM env variable
 - ❌ Full options and flags from cram (at least detected and noticed if not relevant)
 
+## Usage
+
+```cram
+  Usage: craw.py [OPTIONS] TESTS...
+  OPTIONS:
+  
+    -h, --help                      show this help message and exit
+    -i, --interactive               interactively merge changed test output
+    -y, --yes                       answer yes to all questions
+    --promote                       equivalent to -i -y: accept all changed test output
+    --keep-tmpdir                   keep temporary directories
+    --shell={cmd|powershell}        shell to use for running tests (default: powershell)
+  
+Non indented lines are just comments
+Lines starting with '  $ ' are shell commands 
+Lines starting with '  ' are the expected output of the shell commands above
+  $ echo Youpi
+  Youpi
+  $ echo Content > test.txt
+  $ cat test.txt
+  Content
+The env variable TESTDIR is set to the directory from which craw is executed
+  $ cat $TESTDIR/test_resource.txt
+  Lorem ipsum
+If the shell command ends up failing, it's exit code is displayed between brackets after the command output
+(here we swallow the error message to avoid flakiness of paths and windows error messages translation)
+  $ cat non_existing_file.txt 2> swallow_error_message
+  [False]
+```
+
 ## Contribute
 
 - `make test` to test craw itself

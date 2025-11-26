@@ -380,5 +380,7 @@ if __name__ == "__main__":
     options = Options()
     args = options.parse(sys.argv[1:])
     if options.invalid or options.help:
-        options.usage_and_exit(sys.argv[1] if len(sys.argv) > 0 else "craw")
+        options.usage_and_exit(
+            os.path.basename(sys.argv[0]) if len(sys.argv) > 0 else "craw"
+        )
     main(options, args[0:])

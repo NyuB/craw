@@ -6,7 +6,7 @@ import sys
 from dataclasses import dataclass
 from hashlib import md5
 from random import randint
-from typing import Callable, Protocol
+from typing import Callable, Protocol, Never
 
 
 class ShellProtocol(Protocol):
@@ -232,6 +232,26 @@ class Options:
     yes: bool = False
     keep_tmpdir: bool = False
     shell: type[Powershell] | type[Cmd] = Powershell
+    help: bool = False
+    invalid: bool = False
+
+    def usage_and_exit(self, prog_name: str) -> Never:
+        print(f"Usage: {prog_name} [OPTIONS] TESTS...")
+        print("OPTIONS:")
+        print(
+            """
+  -h, --help                      show this help message and exit
+  -i, --interactive               interactively merge changed test output
+  -y, --yes                       answer yes to all questions
+  --promote                       equivalent to -i -y: accept all changed test output
+  --keep-tmpdir                   keep temporary directories
+  --shell={cmd|powershell}        shell to use for running tests (default: powershell)
+"""
+        )
+        if self.invalid:
+            sys.exit(1)
+        else:
+            sys.exit(0)
 
     def promote(self) -> bool:
         return self.interactive and self.yes
@@ -256,9 +276,13 @@ class Options:
                 self.shell = Powershell
             elif arg == "--shell=cmd":
                 self.shell = Cmd
+            elif arg == "--help" or arg == "-h":
+                self.help = True
             elif arg == "--":
                 ret.extend(args[i + 1 :])
                 break
+            elif arg.startswith("-"):
+                self.invalid = True
             else:
                 ret.append(arg)
 
@@ -332,4 +356,6 @@ def main(options: Options, test_files: list[str]) -> None:
 if __name__ == "__main__":
     options = Options()
     args = options.parse(sys.argv[1:])
+    if options.invalid or options.help:
+        options.usage_and_exit(sys.argv[1] if len(sys.argv) > 0 else "craw")
     main(options, args[0:])

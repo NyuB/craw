@@ -1,3 +1,15 @@
+Usage
+  $ py $TESTDIR/craw.py --help
+  Usage: --help [OPTIONS] TESTS...
+  OPTIONS:
+  
+    -h, --help                      show this help message and exit
+    -i, --interactive               interactively merge changed test output
+    -y, --yes                       answer yes to all questions
+    --promote                       equivalent to -i -y: accept all changed test output
+    --keep-tmpdir                   keep temporary directories
+    --shell={cmd|powershell}        shell to use for running tests (default: powershell)
+  
 Just a comment  
   $ echo Test
   Test

@@ -29,7 +29,7 @@ Meta-test, brace yourself:
     $ echo Promoted
     Promoted
 
-Tests are executed in a temp directory placed '.cram' root folder
+Tests are executed in a temp directory placed under '.cram' root folder
 By default, the temp dir is cleaned up after tests
   $ (Get-ChildItem .cram).Count
   0

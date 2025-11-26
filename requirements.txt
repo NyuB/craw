@@ -1,0 +1,2 @@
+# Developer requirements only
+pyrefly >= 0.41

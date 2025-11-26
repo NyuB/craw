@@ -1,0 +1,21 @@
+name: CI
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  Tests:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+      - run: py -m pip install -r requirements.txt
+
+      - name: Typecheck
+        run: make typecheck
+          
+      - name: Test
+        run: make test

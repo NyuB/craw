@@ -72,6 +72,10 @@ or using the glob syntax
 
 In those cases, the line is first matched against the regexp, if it does not match the test runner falls back to treating the line like any other one.
 
+## Known caveats
+
+- using `%errorlevel%` is unreliable with `--shell=cmd`, due to echo not setting the error level and the need of internal cleanup.
+
 ## Contribute
 
 - `make test` to test craw itself

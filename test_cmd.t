@@ -8,7 +8,7 @@
   $ set KEY=VALUE
   
   $ echo %KEY%
-  %KEY%
+  VALUE
   
   $ more oops.txt 2> swallow_error_message.txt
   

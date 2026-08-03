@@ -106,7 +106,7 @@ class Cmd(WithInterProcessCommunication):
 
     def send_line(self, line: str) -> None:
         escaped = line.replace('"', '"') if line.startswith("echo") else line
-        print(f"cmd /c {escaped}", file=self.outfile)
+        print(f"(call,) & {escaped}", file=self.outfile)
         self.outfile.flush()
 
     def receive_line(self) -> str:

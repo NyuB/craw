@@ -33,6 +33,9 @@ class ShellProtocol(Protocol):
     def is_ok_error_code(self, code: str) -> bool:
         raise NotImplementedError()
 
+    def setup_env(self, env: dict[str, str]) -> None:
+        raise NotImplementedError()
+
     @classmethod
     def name(cls) -> str:
         raise NotImplementedError()
@@ -100,6 +103,10 @@ class Powershell(WithInterProcessCommunication):
     def is_ok_error_code(self, code: str) -> bool:
         return code == "True"
 
+    def setup_env(self, env: dict[str, str]) -> None:
+        # set variables, which differs from env variables in powershell
+        for k, v in env.items():
+            self.send_line(f'${k}="{v}"')
     @classmethod
     def name(self) -> str:
         return "powershell.exe"
@@ -137,6 +144,9 @@ class Cmd(WithInterProcessCommunication):
     def is_ok_error_code(self, code: str) -> bool:
         return code == "0"
 
+    def setup_env(self, env: dict[str, str]) -> None:
+        pass
+
     @classmethod
     def name(self) -> str:
         return "cmd.exe"
@@ -148,11 +158,7 @@ class Cram:
         # discard shell prelude
         mark = self.mark_("")
         self.receive_until_mark_(mark)
-
-        # set variables, which differs from env variables in powershell
-        for k, v in variables.items():
-            self.shell.send_line(f'${k}="{v}"')
-
+        self.shell.setup_env(variables)
         mark = self.mark_("")
         self.receive_until_mark_(mark)
 

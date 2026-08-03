@@ -1,3 +1,7 @@
+This test is intended to run with powershell
+  $ echo $TESTSHELL
+  powershell.exe
+
 Usage
   $ py $TESTDIR/craw.py --help
   Usage: craw.py [OPTIONS] TESTS...

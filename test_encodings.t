@@ -1,3 +1,7 @@
+This test is intended to run with powershell
+  $ echo $TESTSHELL
+  powershell.exe
+
 UTF-8 (no BOM)
   $ "  $ echo Promotion" | Out-File -Encoding default  default.t
   $ "  $ echo Promoted" | Out-File -Append -Encoding default  default.t

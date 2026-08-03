@@ -1,3 +1,7 @@
+This test is intended to run with cmd
+  $ echo %TESTSHELL%
+  cmd.exe
+  
   $ echo Youpi
   Youpi
   

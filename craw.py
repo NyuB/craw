@@ -33,6 +33,11 @@ class ShellProtocol(Protocol):
     def is_ok_error_code(self, code: str) -> bool:
         raise NotImplementedError()
 
+    @classmethod
+    def name(cls) -> str:
+        raise NotImplementedError()
+
+
 
 class WithInterProcessCommunication:
     def __init__(
@@ -95,6 +100,10 @@ class Powershell(WithInterProcessCommunication):
     def is_ok_error_code(self, code: str) -> bool:
         return code == "True"
 
+    @classmethod
+    def name(self) -> str:
+        return "powershell.exe"
+
 
 class Cmd(WithInterProcessCommunication):
     def __init__(self, workdir: str, env: dict[str, str]) -> None:
@@ -127,6 +136,10 @@ class Cmd(WithInterProcessCommunication):
 
     def is_ok_error_code(self, code: str) -> bool:
         return code == "0"
+
+    @classmethod
+    def name(self) -> str:
+        return "cmd.exe"
 
 
 class Cram:
@@ -365,7 +378,7 @@ def run_test(options: Options, test_file: str) -> TestResult:
         "TMP": temp_dir,
         "CRAMTMP": temp_dir,
         "TESTFILE": os.path.basename(test_file),
-        "TESTSHELL": "powershell.exe",
+        "TESTSHELL": options.shell.name(),
         # Misc
         "CDPATH": "",
         "COLUMNS": "80",

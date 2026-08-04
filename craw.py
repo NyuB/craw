@@ -33,7 +33,13 @@ class ShellProtocol(Protocol):
     def is_ok_error_code(self, code: str) -> bool:
         raise NotImplementedError()
 
-    def setup_env(self, env: dict[str, str]) -> None:
+    def init_env(self, env: dict[str, str]) -> None:
+        """
+        Sets up shell-specific behavior regarding environment variables, e.g. setting powershell variables
+        """
+        raise NotImplementedError()
+
+    def exit(self) -> None:
         raise NotImplementedError()
 
     @classmethod
@@ -103,10 +109,13 @@ class Powershell(WithInterProcessCommunication):
     def is_ok_error_code(self, code: str) -> bool:
         return code == "True"
 
-    def setup_env(self, env: dict[str, str]) -> None:
+    def init_env(self, env: dict[str, str]) -> None:
         # set variables, which differs from env variables in powershell
+        # environment variables are retrieved with Get-Item "env:$VAR" 
+        # as a QOL improvement, we assign plain variables which can be accessed with the linux-like $VAR  
         for k, v in env.items():
             self.send_line(f'${k}="{v}"')
+
     @classmethod
     def name(self) -> str:
         return "powershell.exe"
@@ -144,7 +153,7 @@ class Cmd(WithInterProcessCommunication):
     def is_ok_error_code(self, code: str) -> bool:
         return code == "0"
 
-    def setup_env(self, env: dict[str, str]) -> None:
+    def init_env(self, env: dict[str, str]) -> None:
         pass
 
     @classmethod
@@ -158,7 +167,7 @@ class Cram:
         # discard shell prelude
         mark = self.mark_("")
         self.receive_until_mark_(mark)
-        self.shell.setup_env(variables)
+        self.shell.init_env(variables)
         mark = self.mark_("")
         self.receive_until_mark_(mark)
 

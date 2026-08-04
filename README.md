@@ -75,6 +75,7 @@ In those cases, the line is first matched against the regexp, if it does not mat
 ## Known bugs and caveats
 
 - Note that, in the [example above](#Usage), the running shell is indeed powershell (notice the `[False]` as error instead of usual Linux integers return codes). Craw is not a `sh` emulator, only a way to run cram tests with windows shells.
+- powershell env variables differ from plain variables. To avoid having to use the `Get-Item "env:$VAR"` syntax for retrieving env variables, craw assigns a variable `$VAR=value` for each environment variable VAR. This is how the [example above](#Usage) can use $TESTDIR like an 'usual linux-like env variable'.
 - using `%errorlevel%` is unreliable with `--shell=cmd`, due to echo not setting the error level and the need of internal cleanup.
 
 ## Contribute

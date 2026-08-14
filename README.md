@@ -14,7 +14,7 @@
 - ✅ Cram env variables (duplicated as powershell env items and proper variables)
 - ✅ 'Test framework behaviour', i.e. non-zero return code and diff display when .err differs from .t
 - ✅ Display error codes after command if non-zero
-- ❌ Regular expression for expected output
+- ✅ Regular expression for expected output
 - ❌ Options config via .cramrc
 - ❌ Options config via CRAM env variable
 - ❌ Full options and flags from cram (at least detected and noticed if not relevant)
@@ -48,6 +48,19 @@ If the shell command ends up failing, it's exit code is displayed between bracke
   $ cat non_existing_file.txt 2> swallow_error_message
   [False]
 ```
+
+## Advanced features
+
+### Regular expressions
+
+Output line expectations can be regular expressions, like
+
+```cram
+  $ echo Youpi
+  Y...i (re)
+```
+
+In those cases, the line is first matched against the regexp, if it does not match the test runner falls back to treating the line like any other one.
 
 ## Contribute
 

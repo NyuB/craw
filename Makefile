@@ -2,7 +2,7 @@ PY=py
 # Windows' rm -rf
 RMRF=rd /S /Q
 
-TESTS=test.t test_encodings.t test_variables.t
+TESTS=test.t test_encodings.t test_re.t test_variables.t
 TESTS_CMD=test_cmd.t
 
 default: typecheck fmt test

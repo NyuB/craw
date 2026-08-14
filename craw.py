@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from hashlib import md5
 from random import randint
 from typing import Callable, Never, Protocol
+import re
 
 
 class ShellProtocol(Protocol):
@@ -199,10 +200,29 @@ class Cram:
         return f"{h.hexdigest()}"
 
 
-@dataclass
 class TestResult:
-    expected: list[str]
-    actual: list[str]
+    def __init__(self, expected, actual):
+        self.expected = []
+        self.actual = []
+        le = len(expected)
+        la = len(actual)
+        for i in range(max(le, la)):
+            if i < le and i < la:
+                e = expected[i]
+                a = actual[i]
+                if e.endswith(" (re)"):
+                    regex = re.compile(e.removesuffix(" (re)"))
+                    if regex.fullmatch(a):
+                        self.expected.append(e)
+                        self.actual.append(e)
+                        continue
+                    
+                self.expected.append(e)
+                self.actual.append(a)
+            elif i < le:
+                self.expected.append(expected[i])
+            elif i < la:
+                self.expected.append(actual[i])
 
     def diff(self, file_t: str, file_err: str) -> list[str]:
         return [

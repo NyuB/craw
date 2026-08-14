@@ -35,7 +35,7 @@ class ShellProtocol(Protocol):
 class WithInterProcessCommunication:
     def __init__(
         self, command: list[str], workdir: str, env: dict[str, str], newline: str
-    ):
+    ) -> None:
         """
         Parameters:
             env(dict[str,str]): environment variables
@@ -44,13 +44,13 @@ class WithInterProcessCommunication:
 
     def init_ipc(
         self, command: list[str], workdir: str, env: dict[str, str], newline: str
-    ):
+    ) -> None:
         # Source - https://stackoverflow.com/a/54066021
         # Posted by Ondrej K., modified by community. See post 'Timeline' for change history
         # Retrieved 2025-11-08, License - CC BY-SA 4.0
 
-        (child_read, parent_write) = os.pipe()
-        (parent_read, child_write) = os.pipe()
+        child_read, parent_write = os.pipe()
+        parent_read, child_write = os.pipe()
         self.child = subprocess.Popen(
             command,
             stdin=child_read,
@@ -64,7 +64,7 @@ class WithInterProcessCommunication:
 
 
 class Powershell(WithInterProcessCommunication):
-    def __init__(self, workdir: str, env: dict[str, str]):
+    def __init__(self, workdir: str, env: dict[str, str]) -> None:
         """
         Parameters:
             env(dict[str,str]): environment variables
@@ -95,7 +95,7 @@ class Powershell(WithInterProcessCommunication):
 
 
 class Cmd(WithInterProcessCommunication):
-    def __init__(self, workdir: str, env: dict[str, str]):
+    def __init__(self, workdir: str, env: dict[str, str]) -> None:
         """
         Parameters:
             env(dict[str,str]): environment variables
@@ -128,7 +128,7 @@ class Cmd(WithInterProcessCommunication):
 
 
 class Cram:
-    def __init__(self, shell: ShellProtocol, variables: dict[str, str]):
+    def __init__(self, shell: ShellProtocol, variables: dict[str, str]) -> None:
         self.shell = shell
         # discard shell prelude
         mark = self.mark_("")
@@ -204,7 +204,7 @@ class TestResult:
     expected: list[str]
     actual: list[str]
 
-    def diff(self, file_t, file_err) -> list[str]:
+    def diff(self, file_t: str, file_err: str) -> list[str]:
         return [
             l.strip("\r\n")
             for l in difflib.unified_diff(
@@ -212,7 +212,7 @@ class TestResult:
             )
         ]
 
-    def success(self):
+    def success(self) -> bool:
         return self.expected == self.actual
 
 
@@ -261,16 +261,14 @@ class Options:
     def usage_and_exit(self, prog_name: str) -> Never:
         print(f"Usage: {prog_name} [OPTIONS] TESTS...")
         print("OPTIONS:")
-        print(
-            """
+        print("""
   -h, --help                      show this help message and exit
   -i, --interactive               interactively merge changed test output
   -y, --yes                       answer yes to all questions
   --promote                       equivalent to -i -y: accept all changed test output
   --keep-tmpdir                   keep temporary directories
   --shell={cmd|powershell}        shell to use for running tests (default: powershell)
-"""
-        )
+""")
         if self.invalid:
             sys.exit(1)
         else:

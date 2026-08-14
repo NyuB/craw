@@ -16,6 +16,9 @@ jobs:
 
       - name: Typecheck
         run: make typecheck
+      
+      - name: Format
+        run: make fmt-check
           
       - name: Test
         run: make test

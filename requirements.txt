@@ -1,2 +1,4 @@
 # Developer requirements only
+black >= 26.5
+isort >= 8
 pyrefly >= 0.41

@@ -5,6 +5,8 @@ RMRF=rd /S /Q
 TESTS=test.t test_encodings.t test_variables.t
 TESTS_CMD=test_cmd.t
 
+default: typecheck fmt test
+
 test:
 	$(PY) craw.py $(TESTS)
 	$(PY) craw.py --shell=cmd $(TESTS_CMD)
@@ -25,7 +27,9 @@ clean:
 fmt:
 	py -m isort .
 	py -m black .
+	py -m pyrefly infer
 
 fmt-check:
 	py -m isort --check --diff .
 	py -m black --check .
+	py -m pyrefly infer --dry-run

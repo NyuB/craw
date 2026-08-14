@@ -1,3 +1,7 @@
+"""
+Test helper to run after a cram test, checking that .err file have no difference with .t files
+"""
+
 import os
 import sys
 

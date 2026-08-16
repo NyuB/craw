@@ -221,7 +221,7 @@ class TestResult:
             elif i < le:
                 self.expected.append(expected[i])
             elif i < la:
-                self.expected.append(actual[i])
+                self.actual.append(actual[i])
 
     def diff(self, file_t: str, file_err: str) -> list[str]:
         return [

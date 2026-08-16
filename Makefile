@@ -12,7 +12,7 @@ test:
 	$(PY) craw.py $(TESTS)
 	$(PY) craw.py --shell=cmd $(TESTS_CMD)
 	$(PY) test_err_t_diffs.py $(TESTS) $(TESTS_CMD)
-	$(PY) test_readme.py README.md test.t
+	$(PY) test_readme.py README.md test.t test_re.t
 
 test-promote:
 	-$(PY) craw.py -i -y $(TESTS)

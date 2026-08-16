@@ -1,4 +1,3 @@
-import glob
 import difflib
 import glob
 import os

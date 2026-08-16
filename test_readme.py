@@ -14,36 +14,60 @@ def sublist(sub: list[str], l: list[str]) -> bool:
     return False
 
 
-def main(readme: str, test: str):
-    with open(readme, "r", encoding="utf8") as f:
-        lines = f.read().replace("\r\n", "\n").split("\n")
-        usage: list[str] = []
-        in_usage = False
-        for l in lines:
-            if l == "```cram":
-                in_usage = True
-            elif l == "```":
-                in_usage = False
+def read_lines(file: str) -> list[str]:
+    with open(file, "r", encoding="utf8") as f:
+        return f.read().replace("\r\n", "\n").split("\n")
+
+
+def main(readme: str, tests: list[str]):
+    readme_lines = read_lines(readme)
+    usages: list[list[str]] = []
+    usage: list[str] = []
+    in_usage = False
+    for l in readme_lines:
+        if l == "```cram":
+            assert not in_usage
+            in_usage = True
+        elif l == "```" and in_usage:
+            in_usage = False
+            usages.append(usage)
+            usage = []
+        elif in_usage:
+            usage.append(l)
+    assert not in_usage
+    assert usages != []
+
+    all_usages_found = True
+    for usage in usages:
+        usage_found = False
+        for test in tests:
+            test_lines = read_lines(test)
+            if sublist(usage, test_lines):
+                usage_found = True
                 break
-            elif in_usage:
-                usage.append(l)
-        assert usage != []
-    with open(test, "r", encoding="utf8") as f:
-        lines = f.read().replace("\r\n", "\n").split("\n")
-        if sublist(usage, lines):
-            exit(0)
-        else:
+        all_usages_found = all_usages_found and usage_found
+
+        if not usage_found:
+            prefix_len = 3
+            prefix = usage[:prefix_len]
             print(
-                "README usage differs from the tested one, please update the README.md usage section from test.t"
+                f"Usage not found in any of the given tests, please update the documentation or add a corresponding test. Here are the first {prefix_len} lines of the involved usage:"
             )
-            exit(1)
+            print(">>>")
+            print(*prefix, sep="\n")
+            print("<<<")
+    if not all_usages_found:
+        print(f"Some usage sections in {readme} have no matching test !")
+        exit(1)
+    else:
+        exit(0)
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print(f"Usage: {sys.argv[0]} <readme.md> <test.t>")
+        print(f"Usage: {sys.argv[0]} <readme.md> [<test.t>...]")
         print(
-            f"    Check if readme.md usage section corresponds line by one to a section of test.t"
+            f"    Check if each of readme.md usage sections corresponds to a section in one of [test.t ...]"
         )
         exit(2)
-    main(sys.argv[1], sys.argv[2])
+    main(sys.argv[1], sys.argv[2:])

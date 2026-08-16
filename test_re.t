@@ -1,6 +1,6 @@
 An output line can be a regular expression, and will match any output matching the regular expression
-  $ echo "Ok bob"
-  Ok ... (re)
+  $ echo Youpi
+  Y...i (re)
   $ echo "Ok bob"
   Ok [a-z]{3} (re)
   $ echo "Foobar"

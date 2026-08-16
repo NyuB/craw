@@ -1,13 +1,12 @@
 import difflib
 import os
+import re
 import shutil
 import subprocess
 import sys
-from dataclasses import dataclass
 from hashlib import md5
 from random import randint
 from typing import Callable, Never, Protocol
-import re
 
 
 class ShellProtocol(Protocol):
@@ -201,7 +200,7 @@ class Cram:
 
 
 class TestResult:
-    def __init__(self, expected, actual):
+    def __init__(self, expected, actual) -> None:
         self.expected = []
         self.actual = []
         le = len(expected)
@@ -216,7 +215,7 @@ class TestResult:
                         self.expected.append(e)
                         self.actual.append(e)
                         continue
-                    
+
                 self.expected.append(e)
                 self.actual.append(a)
             elif i < le:

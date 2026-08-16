@@ -31,5 +31,5 @@ fmt:
 
 fmt-check:
 	py -m isort --check --diff .
-	py -m black --check .
+	py -m black --check --diff .
 	py -m pyrefly infer --dry-run

@@ -8,6 +8,7 @@ TESTS_CMD=test_cmd.t
 default: typecheck fmt test
 
 test:
+	$(PY) -m unittest craw.py
 	$(PY) craw.py $(TESTS)
 	$(PY) craw.py --shell=cmd $(TESTS_CMD)
 	$(PY) test_err_t_diffs.py $(TESTS) $(TESTS_CMD)

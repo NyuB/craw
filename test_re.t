@@ -11,3 +11,9 @@ An output line can be a regular expression, and will match any output matching t
   Edge case .* (re)
   $ echo "Edge case .* (re)"
   Edge case .* (re)
+
+These expressions can be written using glob syntax (https://en.wikipedia.org/wiki/Glob_(programming)#Syntax)
+  $ echo "ABC"
+  A?C (glob)
+  $ echo "aaa/bb/c_file.txt"
+  **/*/*.txt (glob)

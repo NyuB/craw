@@ -1,9 +1,12 @@
+import glob
 import difflib
+import glob
 import os
 import re
 import shutil
 import subprocess
 import sys
+import unittest
 from hashlib import md5
 from random import randint
 from typing import Callable, Never, Protocol
@@ -215,6 +218,14 @@ class TestResult:
                         self.expected.append(e)
                         self.actual.append(e)
                         continue
+                if e.endswith(" (glob)"):
+                    regex = re.compile(
+                        glob.translate(e.removesuffix(" (glob)"), recursive=True)
+                    )
+                    if regex.fullmatch(a):
+                        self.expected.append(e)
+                        self.actual.append(e)
+                        continue
 
                 self.expected.append(e)
                 self.actual.append(a)
@@ -401,3 +412,30 @@ if __name__ == "__main__":
             os.path.basename(sys.argv[0]) if len(sys.argv) > 0 else "craw"
         )
     main(options, args[0:])
+
+
+class Tests(unittest.TestCase):
+    result_diff_success_cases = [
+        (["A", "B"], ["A", "B"], "Simple"),
+        ([". (re)"], ["A"], "(re) Single char"),
+        (["? (glob)"], ["A"], "(glob) Single char"),
+        (["**/*.txt (glob)"], ["aaa/bb/c.txt"], "(glob) Path match"),
+    ]
+
+    result_diff_failure_cases = [
+        (["A", "B"], ["A"], "Missing line"),
+        ([". (re)"], ["AA"], "(re) No match"),
+        (["?.* (glob)"], ["AA"], "(glob) No match for regexp characters"),
+    ]
+
+    def test_test_result_success(self) -> None:
+        for expected, actual, label in self.result_diff_success_cases:
+            with self.subTest(label):
+                result = TestResult(expected=expected, actual=actual)
+                self.assertTrue(result.success())
+
+    def test_test_result_failure(self) -> None:
+        for expected, actual, label in self.result_diff_failure_cases:
+            with self.subTest(label):
+                result = TestResult(expected=expected, actual=actual)
+                self.assertFalse(result.success())

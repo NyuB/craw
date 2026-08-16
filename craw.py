@@ -47,7 +47,6 @@ class ShellProtocol(Protocol):
         raise NotImplementedError()
 
 
-
 class WithInterProcessCommunication:
     def __init__(
         self, command: list[str], workdir: str, env: dict[str, str], newline: str
@@ -111,8 +110,8 @@ class Powershell(WithInterProcessCommunication):
 
     def init_env(self, env: dict[str, str]) -> None:
         # set variables, which differs from env variables in powershell
-        # environment variables are retrieved with Get-Item "env:$VAR" 
-        # as a QOL improvement, we assign plain variables which can be accessed with the linux-like $VAR  
+        # environment variables are retrieved with Get-Item "env:$VAR"
+        # as a QOL improvement, we assign plain variables which can be accessed with the linux-like $VAR
         for k, v in env.items():
             self.send_line(f'${k}="{v}"')
 

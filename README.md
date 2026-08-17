@@ -26,6 +26,8 @@
   OPTIONS:
   
     -h, --help                      show this help message and exit
+    -q, --quiet                     don't print diffs
+    -v, --verbose                   show filenames and test status
     -i, --interactive               interactively merge changed test output
     -y, --yes                       answer yes to all questions
     --promote                       equivalent to -i -y: accept all changed test output

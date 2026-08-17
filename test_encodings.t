@@ -14,6 +14,7 @@ UTF-8 (no BOM)
      $ echo Promoted
   -  Promoted
    
+  # Ran 1 tests, 0 skipped, 1 failed
   [False]
   $ cat default.t
     $ echo Promotion
@@ -37,6 +38,7 @@ UTF-8
      $ echo Promoted
   -  Promoted
    
+  # Ran 1 tests, 0 skipped, 1 failed
   [False]
   $ cat utf8.t
     $ echo Promotion

@@ -391,7 +391,11 @@ def run_test(options: Options, test_file: str) -> TestResult:
             shutil.rmtree(temp_dir)
 
 
-def main(options: Options, test_files: list[str]) -> None:
+def main(options: Options, test_files: list[str]) -> int:
+    """
+    returns: the exit code associated with the run of `test_files`
+    """
+
     failures: list[tuple[str, TestResult]] = []
     for test_file in test_files:
         result = run_test(options, test_file)
@@ -405,7 +409,9 @@ def main(options: Options, test_files: list[str]) -> None:
         if not options.quiet:
             for test_file, result in failures:
                 print(*result.diff(err_file(test_file), test_file), sep="\n")
-        exit(1)
+    print(f"# Ran {len(test_files)} tests, 0 skipped, {len(failures)} failed")
+    exit_code = 0 if len(failures) == 0 else 1
+    return exit_code
 
 
 if __name__ == "__main__":
@@ -415,7 +421,7 @@ if __name__ == "__main__":
         options.usage_and_exit(
             os.path.basename(sys.argv[0]) if len(sys.argv) > 0 else "craw"
         )
-    main(options, args[0:])
+    exit(main(options, args[0:]))
 
 
 class Tests(unittest.TestCase):

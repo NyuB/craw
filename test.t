@@ -43,6 +43,7 @@ Meta-test, brace yourself:
      $ echo Promoted
   -  Promoted
    
+  # Ran 1 tests, 0 skipped, 1 failed
   [False]
   $ cat meta.t
     $ echo Promotion
@@ -57,6 +58,7 @@ By default, the temp dir is cleaned up after tests
 It can be kept with a flag
   $ py $TESTDIR/craw.py --keep-tmpdir meta.t
   .
+  # Ran 1 tests, 0 skipped, 0 failed
   $ (Get-ChildItem .cram).Count
   1
 
@@ -71,7 +73,9 @@ Diff printing on failure can be disabled with the --quiet flag
      $ echo Oops
   -  Oops
    
+  # Ran 1 tests, 0 skipped, 1 failed
   [False]
   $ py $TESTDIR/craw.py --quiet meta.t
   !
+  # Ran 1 tests, 0 skipped, 1 failed
   [False]

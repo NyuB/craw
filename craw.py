@@ -421,7 +421,7 @@ if __name__ == "__main__":
         options.usage_and_exit(
             os.path.basename(sys.argv[0]) if len(sys.argv) > 0 else "craw"
         )
-    exit(main(options, args[0:]))
+    exit(main(options, args))
 
 
 class Tests(unittest.TestCase):

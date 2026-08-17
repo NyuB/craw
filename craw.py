@@ -281,6 +281,7 @@ def make_temp_dir(prefix: str) -> str:
 # TODO support specifying options in the .t file
 class Options:
     quiet: bool = False
+    verbose: bool = False
     interactive: bool = False
     yes: bool = False
     keep_tmpdir: bool = False
@@ -294,6 +295,7 @@ class Options:
         print("""
   -h, --help                      show this help message and exit
   -q, --quiet                     don't print diffs
+  -v, --verbose                   show filenames and test status
   -i, --interactive               interactively merge changed test output
   -y, --yes                       answer yes to all questions
   --promote                       equivalent to -i -y: accept all changed test output
@@ -332,6 +334,8 @@ class Options:
                 self.help = True
             elif arg == "--quiet" or arg == "-q":
                 self.quiet = True
+            elif arg == "--verbose" or arg == "-v":
+                self.verbose = True
             elif arg == "--":
                 ret.extend(args[i + 1 :])
                 break
@@ -391,27 +395,53 @@ def run_test(options: Options, test_file: str) -> TestResult:
             shutil.rmtree(temp_dir)
 
 
+class StatusPrinter:
+    """
+    Handles the way test result are displayed, depending on --verbose flag
+    """
+
+    def __init__(self, options: Options) -> None:
+        self.verbose = options.verbose
+
+    def print_test_result(self, test_file: str, result: TestResult) -> None:
+        if self.verbose:
+            if result.success():
+                print(f"{test_file}: passed")
+            else:
+                print(f"{test_file}: failed")
+        else:
+            if result.success():
+                print(".", end="")
+            else:
+                print("!", end="")
+
+    def print_end(self) -> None:
+        if self.verbose:
+            pass
+        else:
+            print("")
+
+
 def main(options: Options, test_files: list[str]) -> int:
     """
     returns: the exit code associated with the run of `test_files`
     """
 
     failures: list[tuple[str, TestResult]] = []
+    result_printer = StatusPrinter(options)
     for test_file in test_files:
-        result = run_test(options, test_file)
-        if result.success():
-            print(".", end="")
-        else:
+        result: TestResult = run_test(options, test_file)
+        result_printer.print_test_result(test_file, result)
+        if not result.success():
             failures.append((os.path.basename(test_file), result))
-            print("!", end="")
-    print("")
-    if len(failures) > 0:
+    result_printer.print_end()
+    failed = len(failures) > 0
+    if failed:
         if not options.quiet:
             for test_file, result in failures:
                 print(*result.diff(err_file(test_file), test_file), sep="\n")
     print(f"# Ran {len(test_files)} tests, 0 skipped, {len(failures)} failed")
-    exit_code = 0 if len(failures) == 0 else 1
-    return exit_code
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ Usage
   
     -h, --help                      show this help message and exit
     -q, --quiet                     don't print diffs
+    -v, --verbose                   show filenames and test status
     -i, --interactive               interactively merge changed test output
     -y, --yes                       answer yes to all questions
     --promote                       equivalent to -i -y: accept all changed test output
@@ -78,4 +79,16 @@ Diff printing on failure can be disabled with the --quiet flag
   $ py $TESTDIR/craw.py --quiet meta.t
   !
   # Ran 1 tests, 0 skipped, 1 failed
+  [False]
+
+Clean up
+  $ rm meta.*
+
+By default, test status are reported with a concise . or ! format, a more verbose reporting is triggerd with --verbose flag:
+  $ echo $ "  $ echo Fails" | Out-File -Encoding default a.t
+  $ echo $ "Succeeds" | Out-File -Encoding default b.t
+  $ py $TESTDIR/craw.py -q --verbose a.t b.t
+  a.t: failed
+  b.t: passed
+  # Ran 2 tests, 0 skipped, 1 failed
   [False]

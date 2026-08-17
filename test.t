@@ -4,6 +4,7 @@ Usage
   OPTIONS:
   
     -h, --help                      show this help message and exit
+    -q, --quiet                     don't print diffs
     -i, --interactive               interactively merge changed test output
     -y, --yes                       answer yes to all questions
     --promote                       equivalent to -i -y: accept all changed test output
@@ -27,7 +28,7 @@ If the shell command ends up failing, it's exit code is displayed between bracke
   [False]
 
 Meta-test, brace yourself:
-  $ "  $ echo Promotion" | Out-File -Encoding default  meta.t
+  $ "  $ echo Promotion" | Out-File -Encoding default meta.t
   $ "  $ echo Promoted" | Out-File -Append -Encoding default meta.t
   $ cat meta.t
     $ echo Promotion
@@ -58,3 +59,19 @@ It can be kept with a flag
   .
   $ (Get-ChildItem .cram).Count
   1
+
+Diff printing on failure can be disabled with the --quiet flag
+  $ echo $ "  $ echo Oops" | Out-File -Encoding default meta.t
+  $ py $TESTDIR/craw.py meta.t
+  !
+  --- meta.t
+  +++ meta.err
+  @@ -1,4 +1,3 @@
+   $
+     $ echo Oops
+  -  Oops
+   
+  [False]
+  $ py $TESTDIR/craw.py --quiet meta.t
+  !
+  [False]

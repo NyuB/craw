@@ -280,6 +280,7 @@ def make_temp_dir(prefix: str) -> str:
 # TODO (feature parity) support loading from CRAM env variable
 # TODO support specifying options in the .t file
 class Options:
+    quiet: bool = False
     interactive: bool = False
     yes: bool = False
     keep_tmpdir: bool = False
@@ -292,6 +293,7 @@ class Options:
         print("OPTIONS:")
         print("""
   -h, --help                      show this help message and exit
+  -q, --quiet                     don't print diffs
   -i, --interactive               interactively merge changed test output
   -y, --yes                       answer yes to all questions
   --promote                       equivalent to -i -y: accept all changed test output
@@ -328,6 +330,8 @@ class Options:
                 self.shell = Cmd
             elif arg == "--help" or arg == "-h":
                 self.help = True
+            elif arg == "--quiet" or arg == "-q":
+                self.quiet = True
             elif arg == "--":
                 ret.extend(args[i + 1 :])
                 break
@@ -398,8 +402,9 @@ def main(options: Options, test_files: list[str]) -> None:
             print("!", end="")
     print("")
     if len(failures) > 0:
-        for test_file, result in failures:
-            print(*result.diff(err_file(test_file), test_file), sep="\n")
+        if not options.quiet:
+            for test_file, result in failures:
+                print(*result.diff(err_file(test_file), test_file), sep="\n")
         exit(1)
 
 

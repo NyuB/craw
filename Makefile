@@ -9,12 +9,22 @@ TESTS_CMD=test_cmd.t
 default: typecheck fmt test
 
 .PHONY: test
-test:
-	$(PY) -m unittest craw.py
+test: test-unittest test-doc test-t
+
+.PHONY: test-doc
+test-doc: test-t
+	$(PY) test_readme.py README.md test.t test_re.t
+
+.PHONY: test-t
+test-t:
 	$(PY) craw.py $(TESTS)
 	$(PY) craw.py --shell=cmd $(TESTS_CMD)
 	$(PY) test_err_t_diffs.py $(TESTS) $(TESTS_CMD)
-	$(PY) test_readme.py README.md test.t test_re.t
+
+.PHONY: test-unittest
+test-unittest:
+	$(PY) -m unittest craw.py
+
 
 .PHONY: test-promote
 test-promote:

@@ -76,7 +76,16 @@ In those cases, the line is first matched against the regexp, if it does not mat
 
 - `make test` to test craw itself
 - `make typecheck` to ensure type soundness
+- `make fmt` to format the codebase
 
-Tests consist of end-to-end `.t` files ran by craw itself
+### Tests
 
-Future work could necessitate a unittest harness for more involved testing (property tests, fuzzing or error handling will probably go there).
+Tests consist of:
+- end-to-end `.t` files ran by craw itself. After running, all the .err files are compared against the actual .t files. Any mismatch is a test failure.
+  + see [test_err_t_diffs.py](./test_err_t_diffs.py)
+  + `make test-t` runs only these tests
+- a unittest suite embedded in [craw.py](./craw.py), for 'internal' stuff that would be cumbersome to test or less readable in a `.t` (e.g. parameterized or large-input tests).
+  + `make test-unittest` runs only these tests
+- documentation checks, ensuring usage samples in README.md are consistent with the actual, tested, behaviour of cram.
+  + see [test_readme.py](./test_readme.py)
+  + `make test-doc` runs only these tests

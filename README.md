@@ -18,6 +18,7 @@
 - ❌ Options config via .cramrc
 - ❌ Options config via CRAM env variable
 - ❌ Full options and flags from cram (at least detected and noticed if not relevant)
+- ❌ Skipping tests by exit code
 
 ## Usage
 

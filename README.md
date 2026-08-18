@@ -62,6 +62,13 @@ Output line expectations can be regular expressions, like
   Y...i (re)
 ```
 
+or using the glob syntax
+
+```cram
+  $ echo "ABC"
+  A?C (glob)
+```
+
 In those cases, the line is first matched against the regexp, if it does not match the test runner falls back to treating the line like any other one.
 
 ## Contribute

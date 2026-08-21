@@ -1,3 +1,7 @@
+This test is intended to run with powershell
+  $ echo $TESTSHELL
+  powershell.exe
+
 Variable comparison helpers
   $ function assertEqual { param ($Actual, $Expected) if ($Actual -eq $Expected) { "." } else { echo "Expected '$Expected'"; echo "Actual '$Actual'" } }
   $ function assertVarEqualVar { param ($Actual, $Expected) assertEqual (Get-Variable -ValueOnly $Actual) (Get-Variable -ValueOnly $Expected); assertEqual ((Get-Item "env:$Actual").Value) (Get-Variable -ValueOnly $Expected) }

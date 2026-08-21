@@ -1,3 +1,7 @@
+This test is intended to run with powershell
+  $ echo $TESTSHELL
+  powershell.exe
+
 An output line can be a regular expression, and will match any output matching the regular expression
   $ echo Youpi
   Y...i (re)

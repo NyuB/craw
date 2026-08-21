@@ -33,6 +33,22 @@ class ShellProtocol(Protocol):
     def is_ok_error_code(self, code: str) -> bool:
         raise NotImplementedError()
 
+    def init_env(self, env: dict[str, str]) -> None:
+        """
+        Sets up shell-specific behavior regarding environment variables, e.g. setting powershell variables
+
+        Parameters:
+            env(dict[str,str]): the environment variables of the shell
+        """
+        raise NotImplementedError()
+
+    def exit(self) -> None:
+        raise NotImplementedError()
+
+    @classmethod
+    def name(cls) -> str:
+        raise NotImplementedError()
+
 
 class WithInterProcessCommunication:
     def __init__(
@@ -95,6 +111,17 @@ class Powershell(WithInterProcessCommunication):
     def is_ok_error_code(self, code: str) -> bool:
         return code == "True"
 
+    def init_env(self, env: dict[str, str]) -> None:
+        # set variables, which differs from env variables in powershell
+        # environment variables are retrieved with Get-Item "env:$VAR"
+        # as a QOL improvement, we assign plain variables which can be accessed with the linux-like $VAR
+        for k, v in env.items():
+            self.send_line(f'${k}="{v}"')
+
+    @classmethod
+    def name(self) -> str:
+        return "powershell.exe"
+
 
 class Cmd(WithInterProcessCommunication):
     def __init__(self, workdir: str, env: dict[str, str]) -> None:
@@ -106,7 +133,7 @@ class Cmd(WithInterProcessCommunication):
 
     def send_line(self, line: str) -> None:
         escaped = line.replace('"', '"') if line.startswith("echo") else line
-        print(f"cmd /c {escaped}", file=self.outfile)
+        print(f"(call,) & {escaped}", file=self.outfile)
         self.outfile.flush()
 
     def receive_line(self) -> str:
@@ -128,6 +155,14 @@ class Cmd(WithInterProcessCommunication):
     def is_ok_error_code(self, code: str) -> bool:
         return code == "0"
 
+    def init_env(self, env: dict[str, str]) -> None:
+        # nothing to do, all of env variables set by craw in run_tests() can be accessed with the %my_var% syntax
+        pass
+
+    @classmethod
+    def name(self) -> str:
+        return "cmd.exe"
+
 
 class Cram:
     def __init__(self, shell: ShellProtocol, variables: dict[str, str]) -> None:
@@ -135,11 +170,7 @@ class Cram:
         # discard shell prelude
         mark = self.mark_("")
         self.receive_until_mark_(mark)
-
-        # set variables, which differs from env variables in powershell
-        for k, v in variables.items():
-            self.shell.send_line(f'${k}="{v}"')
-
+        self.shell.init_env(variables)
         mark = self.mark_("")
         self.receive_until_mark_(mark)
 
@@ -365,7 +396,7 @@ def run_test(options: Options, test_file: str) -> TestResult:
         "TMP": temp_dir,
         "CRAMTMP": temp_dir,
         "TESTFILE": os.path.basename(test_file),
-        "TESTSHELL": "powershell.exe",
+        "TESTSHELL": options.shell.name(),
         # Misc
         "CDPATH": "",
         "COLUMNS": "80",

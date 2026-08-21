@@ -36,6 +36,9 @@ class ShellProtocol(Protocol):
     def init_env(self, env: dict[str, str]) -> None:
         """
         Sets up shell-specific behavior regarding environment variables, e.g. setting powershell variables
+
+        Parameters:
+            env(dict[str,str]): the environment variables of the shell
         """
         raise NotImplementedError()
 
@@ -153,6 +156,7 @@ class Cmd(WithInterProcessCommunication):
         return code == "0"
 
     def init_env(self, env: dict[str, str]) -> None:
+        # nothing to do, all of env variables set by craw in run_tests() can be accessed with the %my_var% syntax
         pass
 
     @classmethod
